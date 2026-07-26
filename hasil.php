@@ -13,6 +13,11 @@ if (empty($_POST['gejala'])) {
     exit;
 }
 
+if (count($_POST['gejala']) > 4) {
+    echo "<script>alert('Maksimal gejala yang dapat dipilih adalah 4!'); window.history.back();</script>";
+    exit;
+}
+
 // Tangkap Data Biodata
 $nama_pasien = mysqli_real_escape_string($koneksi, $_POST['nama_pasien']);
 $umur = (int) $_POST['umur'];
@@ -91,6 +96,7 @@ unset($data);
 // Tiap gejala = satu mass function: m({penyakit_grup}) = belief
 // =====================================================================
 $combined_mass = null; // Akan berisi hasil gabungan akhir
+$calculation_steps = []; // Array untuk menyimpan proses perhitungan langkah demi langkah
 
 foreach ($evidence_per_gejala as $kode_gejala => $evidence) {
     // Bentuk mass function dari satu gejala:
@@ -101,9 +107,22 @@ foreach ($evidence_per_gejala as $kode_gejala => $evidence) {
     if ($combined_mass === null) {
         // Inisialisasi: mulai dari gejala pertama
         $combined_mass = $m_baru;
+        $calculation_steps[] = [
+            'type' => 'init',
+            'gejala' => $kode_gejala,
+            'm_baru' => $m_baru
+        ];
     } else {
         // Gabungkan dengan Dempster's Rule (termasuk normalisasi konflik K)
+        $m_lama = $combined_mass;
         $combined_mass = kombinasiDS($combined_mass, $m_baru);
+        $calculation_steps[] = [
+            'type' => 'combine',
+            'gejala' => $kode_gejala,
+            'm_lama' => $m_lama,
+            'm_baru' => $m_baru,
+            'combined' => $combined_mass
+        ];
     }
 }
 
@@ -394,6 +413,63 @@ if ($penyakit_tertinggi) {
             <strong>Θ (Theta)</strong> = massa ketidakpastian. Semakin kecil nilainya, semakin tinggi keyakinan sistem terhadap diagnosis.
             Himpunan <strong>gabungan</strong> (warna kuning) muncul ketika dua gejala mendukung penyakit berbeda sehingga menghasilkan irisan non-tunggal.
         </p>
+    </div>
+
+    <!-- Proses Perhitungan -->
+    <div class="card card-custom p-4 p-md-5 border-0 shadow mt-4 mb-4">
+        <h5 class="fw-bold border-bottom pb-2 mb-3">
+            <i class="fa-solid fa-calculator me-2 text-primary"></i>Proses Perhitungan Dempster-Shafer
+        </h5>
+        <div class="accordion" id="accordionPerhitungan">
+            <?php foreach ($calculation_steps as $index => $step): ?>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading<?= $index ?>">
+                        <button class="accordion-button <?= $index === 0 ? '' : 'collapsed' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#collapse<?= $index ?>" aria-expanded="<?= $index === 0 ? 'true' : 'false' ?>" aria-controls="collapse<?= $index ?>">
+                            Langkah <?= $index + 1 ?>: <?= $step['type'] === 'init' ? 'Inisialisasi Gejala ' . $step['gejala'] : 'Kombinasi dengan Gejala ' . $step['gejala'] ?>
+                        </button>
+                    </h2>
+                    <div id="collapse<?= $index ?>" class="accordion-collapse collapse <?= $index === 0 ? 'show' : '' ?>" aria-labelledby="heading<?= $index ?>" data-bs-parent="#accordionPerhitungan">
+                        <div class="accordion-body">
+                            <?php if ($step['type'] === 'init'): ?>
+                                <h6>Massa Awal (m1):</h6>
+                                <ul>
+                                <?php foreach ($step['m_baru'] as $k => $v): ?>
+                                    <li>m({<?= htmlspecialchars($k) ?>}) = <?= number_format($v, 4) ?></li>
+                                <?php endforeach; ?>
+                                </ul>
+                            <?php else: ?>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <h6 class="text-secondary border-bottom pb-1">Massa Sebelumnya (m_lama):</h6>
+                                        <ul class="list-unstyled">
+                                        <?php foreach ($step['m_lama'] as $k => $v): ?>
+                                            <li>m({<?= htmlspecialchars($k) ?>}) = <?= number_format($v, 4) ?></li>
+                                        <?php endforeach; ?>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="text-primary border-bottom pb-1">Massa Gejala <?= $step['gejala'] ?> (m_baru):</h6>
+                                        <ul class="list-unstyled">
+                                        <?php foreach ($step['m_baru'] as $k => $v): ?>
+                                            <li>m({<?= htmlspecialchars($k) ?>}) = <?= number_format($v, 4) ?></li>
+                                        <?php endforeach; ?>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="text-success border-bottom pb-1">Hasil Kombinasi (m_gabungan):</h6>
+                                        <ul class="list-unstyled">
+                                        <?php foreach ($step['combined'] as $k => $v): ?>
+                                            <li><span class="fw-bold">m({<?= htmlspecialchars($k) ?>})</span> = <?= number_format($v, 4) ?></li>
+                                        <?php endforeach; ?>
+                                        </ul>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
     </div>
 
     <!-- Peringatan Medis -->

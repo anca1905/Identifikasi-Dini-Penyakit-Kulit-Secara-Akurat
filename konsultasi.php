@@ -86,8 +86,25 @@ while ($row = mysqli_fetch_assoc($result_gejala)) {
                 </form>
 
             </div>
-        </div>
+</div>
     </div>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const checkboxes = document.querySelectorAll('.symptom-checkbox');
+    const maxAllowed = 4;
+    
+    checkboxes.forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            const checkedCount = document.querySelectorAll('.symptom-checkbox:checked').length;
+            if (checkedCount > maxAllowed) {
+                this.checked = false;
+                alert("Maksimal gejala yang dapat dipilih adalah " + maxAllowed + "!");
+            }
+        });
+    });
+});
+</script>
 
 <?php require_once 'includes/footer.php'; ?>
