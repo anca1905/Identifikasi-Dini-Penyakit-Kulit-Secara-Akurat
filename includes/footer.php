@@ -4,7 +4,7 @@
 </main>
 <footer>
     <div class="container text-center text-muted">
-        <p class="mb-0">&copy; <?= date("Y"); ?> <strong>SkinExpert</strong>. Sistem Pakar Metode Dempster-Shafer.</p>
+        <p class="mb-0">&copy; <?= date("Y"); ?> <strong>UPTD Puskesmas Siompu</strong>. Sistem Pakar Metode Dempster-Shafer.</p>
     </div>
 </footer>
 

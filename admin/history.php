@@ -140,9 +140,15 @@ function buildQuery($overrides = []) {
                                     <i class="fa-regular fa-eye"></i>
                                 </a>
                                 <a href="../cetak.php?id=<?= $row['id_riwayat']; ?>" target="_blank" 
-                                   class="btn btn-sm btn-outline-info rounded-2 mb-1" 
+                                   class="btn btn-sm btn-outline-info rounded-2 me-1 mb-1" 
                                    title="Cetak" style="width:32px;height:32px;padding:0;line-height:30px;">
                                     <i class="fa-solid fa-print"></i>
+                                </a>
+                                <a href="history.php?del=<?= $row['id_riwayat']; ?>" 
+                                   class="btn btn-sm btn-outline-danger rounded-2 mb-1" 
+                                   title="Hapus" style="width:32px;height:32px;padding:0;line-height:30px;"
+                                   onclick="return confirm('Yakin ingin menghapus riwayat ini?');">
+                                    <i class="fa-solid fa-trash"></i>
                                 </a>
                             </td>
                         </tr>

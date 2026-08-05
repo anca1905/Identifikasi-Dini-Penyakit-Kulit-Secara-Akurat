@@ -59,9 +59,9 @@ if (is_array($gejala_arr)) {
         </div>
 
         <div class="kop-surat text-center position-relative">
-            <h2 class="fw-bold mb-1">KLINIK SPESIALIS KULIT SKINEXPERT</h2>
+            <h2 class="fw-bold mb-1">UPTD PUSKESMAS SIOMPU</h2>
             <p class="mb-0">Sistem Pakar Deteksi Dini Penyakit Kulit (Metode Dempster-Shafer)</p>
-            <p class="mb-0 text-muted" style="font-size: 0.9rem;">Jl. Raya Teknologi No. 123, Kota Informatika</p>
+            <p class="mb-0 text-muted" style="font-size: 0.9rem;">Jalan Poros Siompu, Desa Biwinapada, Kec. Siompu, Kab. Buton Selatan, Sultra</p>
         </div>
 
         <h4 class="text-center text-uppercase fw-bold text-decoration-underline mb-4">HASIL DIAGNOSIS AWAL</h4>
@@ -121,7 +121,7 @@ if (is_array($gejala_arr)) {
             <div class="col-4 text-center">
                 <p class="mb-5">Dokter Pemeriksa,</p>
                 <p class="mb-0"><strong>(Sistem Pakar AI)</strong></p>
-                <small>SkinExpert Dept.</small>
+                <small>UPTD Puskesmas Siompu</small>
             </div>
         </div>
 

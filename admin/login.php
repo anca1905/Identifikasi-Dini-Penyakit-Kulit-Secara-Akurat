@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login Admin | SkinExpert</title>
+    <title>Login Admin | Puskesmas Siompu</title>
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <div class="col-xl-8 col-lg-10">
             <div class="card login-card row g-0 flex-row">
                 <div class="col-md-5 bg-login-aside d-none d-md-flex text-center text-md-start">
-                    <h2 class="fw-bold mb-3"><i class="fa-solid fa-stethoscope me-1"></i> SkinExpert</h2>
+                    <h2 class="fw-bold mb-3"><i class="fa-solid fa-stethoscope me-1"></i> Puskesmas Siompu</h2>
                     <p class="mb-0 text-white-50" style="line-height: 1.6;">Sistem Pakar Identifikasi Dini Penyakit Kulit berbasis Web Menggunakan Metode Dempster-Shafer secara dinamis.</p>
                 </div>
                 <div class="col-md-7 p-4 p-md-5 bg-white">

@@ -8,12 +8,23 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-if (empty($_POST['gejala'])) {
+$gejala_raw = $_POST['gejala'] ?? [];
+$selected_gejala = [];
+$user_weights = [];
+
+foreach ($gejala_raw as $kode => $bobot) {
+    if ($bobot !== '') {
+        $selected_gejala[] = $kode;
+        $user_weights[$kode] = (float) $bobot;
+    }
+}
+
+if (count($selected_gejala) === 0) {
     echo "<script>alert('Harap pilih minimal satu gejala!'); window.history.back();</script>";
     exit;
 }
 
-if (count($_POST['gejala']) > 4) {
+if (count($selected_gejala) > 4) {
     echo "<script>alert('Maksimal gejala yang dapat dipilih adalah 4!'); window.history.back();</script>";
     exit;
 }
@@ -23,11 +34,12 @@ $nama_pasien = mysqli_real_escape_string($koneksi, $_POST['nama_pasien']);
 $umur = (int) $_POST['umur'];
 $jenis_kelamin = mysqli_real_escape_string($koneksi, $_POST['jenis_kelamin']);
 $alamat = mysqli_real_escape_string($koneksi, $_POST['alamat'] ?? '');
-$selected_gejala = $_POST['gejala']; 
 $gejala_json = json_encode($selected_gejala);
 
 // Format array string (untuk referensi query SQL)
-$gejala_in = "'" . implode("','", array_map(function($val) use ($koneksi) { return mysqli_real_escape_string($koneksi, $val); }, $selected_gejala)) . "'";
+$gejala_in = "'" . implode("','", array_map(function ($val) use ($koneksi) {
+    return mysqli_real_escape_string($koneksi, $val);
+}, $selected_gejala)) . "'";
 
 // 1. Ambil Nama Gejala Terpilih
 $query_nama_gejala = "SELECT * FROM gejala WHERE kode_gejala IN ($gejala_in)";
@@ -83,11 +95,11 @@ while ($row = mysqli_fetch_assoc($res_rules)) {
     $evidence_per_gejala[$g]['beliefs'][]  = (float) $row['nilai_densitas'];
 }
 
-// Gunakan nilai densitas MAKSIMUM sebagai belief per gejala
-// (sesuai pendekatan DS: satu gejala = satu mass function dengan belief = max densitas pakar)
-// Catatan: nilai 1.0 diizinkan; perlindungan K=1 sudah ada di fungsi kombinasiDS
+// Gunakan nilai densitas MAKSIMUM sebagai belief pakar, lalu kalikan dengan bobot user
 foreach ($evidence_per_gejala as $g => &$data) {
-    $data['belief'] = max($data['beliefs']);
+    $expert_belief = max($data['beliefs']);
+    $user_belief = $user_weights[$g] ?? 1.0;
+    $data['belief'] = $expert_belief * $user_belief;
 }
 unset($data);
 
@@ -212,266 +224,376 @@ if ($penyakit_tertinggi) {
 ?>
 
 <div class="container py-5">
-    <div class="row align-items-center mb-4">
-        <div class="col-md-6">
-            <h2 class="fw-bold fs-3 text-dark mb-0">Hasil Diagnosis Pasien</h2>
-            <p class="text-muted mb-0">Identifikasi berdasarkan metode Dempster-Shafer</p>
-        </div>
-        <div class="col-md-6 text-md-end mt-3 mt-md-0">
-            <?php if($id_riwayat > 0): ?>
-                <a href="cetak.php?id=<?= $id_riwayat; ?>" target="_blank" class="btn btn-outline-danger px-4 rounded-pill">
-                    <i class="fa-solid fa-print me-2"></i> Cetak Hasil
-                </a>
-            <?php endif; ?>
+    <!-- Header Area -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-5">
+        <h2 class="fw-bold text-dark mb-3 mb-md-0">
+            <i class="fa-solid fa-file-medical text-primary me-2"></i> Hasil Diagnosis
+        </h2>
+        <div class="d-flex gap-3">
+            <a href="konsultasi.php" class="btn btn-primary rounded-pill px-4 shadow-sm fw-semibold">
+                <i class="fa-solid fa-rotate-right me-2"></i> Cek Ulang
+            </a>
+            <a href="index.php" class="btn btn-outline-danger rounded-pill px-4 shadow-sm fw-semibold">
+                <i class="fa-solid fa-power-off me-2"></i> Logout
+            </a>
         </div>
     </div>
 
     <div class="row g-4 mb-4">
-        <!-- Biodata Panel -->
+        <!-- Data Pasien -->
         <div class="col-lg-4">
-            <div class="card card-custom p-4 bg-light shadow-sm">
-                <h5 class="fw-bold border-bottom pb-2 mb-3">Biodata Anda</h5>
-                <ul class="list-unstyled mb-0 lh-lg">
-                    <li><strong>Nama:</strong> <?= htmlspecialchars($nama_pasien); ?></li>
-                    <li><strong>Umur:</strong> <?= $umur; ?> Tahun</li>
-                    <li><strong>Gender:</strong> <?= $jenis_kelamin; ?></li>
-                </ul>
+            <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+                <div class="card-header bg-primary text-white border-0 py-3">
+                    <h5 class="mb-0 fw-semibold"><i class="fa-solid fa-user-injured me-2"></i> Data Pasien</h5>
+                </div>
+                <div class="card-body p-4 bg-light">
+                    <ul class="list-unstyled mb-0 fs-6">
+                        <li class="mb-3 border-bottom pb-2">
+                            <span class="text-muted d-block mb-1">Nama Pasien</span>
+                            <strong class="text-dark fs-5"><?= htmlspecialchars($nama_pasien); ?></strong>
+                        </li>
+                        <li class="mb-3 border-bottom pb-2">
+                            <span class="text-muted d-block mb-1">Jenis Kelamin</span>
+                            <strong class="text-dark fs-5"><?= htmlspecialchars($jenis_kelamin); ?></strong>
+                        </li>
+                        <li class="mb-0">
+                            <span class="text-muted d-block mb-1">Umur</span>
+                            <strong class="text-dark fs-5"><?= $umur; ?> Tahun</strong>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
 
-        <!-- Gejala Terpilih Panel -->
+        <!-- Right Side: Hasil & Keterangan -->
         <div class="col-lg-8">
-             <div class="card card-custom p-4 bg-light shadow-sm h-100">
-                <h5 class="fw-bold border-bottom pb-2 mb-3">Gejala Yang Dialami</h5>
-                <ul class="list-group list-group-flush bg-transparent">
-                    <?php foreach($gejala_terpilih_list as $gx): ?>
-                    <li class="list-group-item bg-transparent px-0 border-light-subtle text-dark">
-                        <i class="fa-solid fa-check text-success me-2"></i> [<?= $gx['kode_gejala']; ?>] <?= htmlspecialchars($gx['nama_gejala']); ?>
-                    </li>
-                    <?php endforeach; ?>
-                </ul>
-             </div>
-        </div>
-    </div>
-
-    <!-- Kesimpulan / Hasil -->
-    <div class="card card-custom p-4 p-md-5 border-0 shadow" style="border-top: 5px solid var(--primary-color) !important;">
-        <?php if ($penyakit_tertinggi): ?>
-            <div class="text-center mb-4">
-                <span class="badge bg-success bg-opacity-10 text-success mb-2 px-3 py-2 rounded-pill"><i class="fa-solid fa-check-circle me-1"></i> Diagnosis Berhasil</span>
-                <h3 class="fw-bold mb-1">Kemungkinan Terbesar Anda Mengalami:</h3>
-                <h1 class="display-5 fw-bold text-primary mb-3"><?= htmlspecialchars($penyakit_tertinggi['nama_penyakit']); ?></h1>
-                
-                <div class="d-inline-flex mx-auto align-items-center justify-content-center bg-primary text-white rounded-pill px-4 py-2 mt-2 shadow-sm">
-                    <i class="fa-solid fa-chart-pie me-2"></i> Tingkat Keyakinan: <?= $penyakit_tertinggi['persentase']; ?>%
-                </div>
-            </div>
-
-            <div class="alert alert-info border-0 rounded-4 p-4 mt-2">
-                <h5 class="fw-bold d-flex align-items-center"><i class="fa-solid fa-user-doctor fs-4 me-2"></i> Solusi Penanganan:</h5>
-                <p class="mb-0 ms-4 ps-1" style="font-size:1.05rem; line-height:1.6;"><?= nl2br(htmlspecialchars($penyakit_tertinggi['solusi'])); ?></p>
-            </div>
-
-            <?php if (count($hasil_diagnosis) > 1): ?>
-                <div class="mt-5">
-                    <h5 class="fw-bold border-bottom pb-2 mb-3">Kemungkinan Lainnya:</h5>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle rounded-3 overflow-hidden">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="py-3">Nama Penyakit</th>
-                                    <th class="py-3">Nilai Belief</th>
-                                    <th class="py-3">Persentase</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php 
-                                // Mulai dari index ke-1 (yang tertiggi sudah ditampilkan di atas)
-                                for ($i = 1; $i < count($hasil_diagnosis); $i++): 
-                                ?>
-                                <tr>
-                                    <td class="fw-semibold text-dark"><?= htmlspecialchars($hasil_diagnosis[$i]['nama_penyakit']); ?></td>
-                                    <td><?= number_format($hasil_diagnosis[$i]['nilai_belief'], 4); ?></td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <span class="me-2"><?= $hasil_diagnosis[$i]['persentase']; ?>%</span>
-                                            <div class="progress flex-grow-1" style="height: 6px;">
-                                                <div class="progress-bar bg-info" role="progressbar" style="width: <?= $hasil_diagnosis[$i]['persentase']; ?>%;" aria-valuenow="<?= $hasil_diagnosis[$i]['persentase']; ?>" aria-valuemin="0" aria-valuemax="100"></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <?php endfor; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            <?php endif; ?>
-
-        <?php else: ?>
-            <div class="text-center py-5 text-muted">
-                <i class="fa-solid fa-triangle-exclamation display-3 mb-3 text-warning"></i>
-                <h4 class="fw-bold text-dark">Data Tidak Ditemukan</h4>
-                <p>Kombinasi gejala yang Anda pilih tidak cocok dengan basis pengetahuan pakar kami saat ini.</p>
-                <a href="konsultasi.php" class="btn btn-outline-primary mt-3 rounded-pill"><i class="fa-solid fa-arrow-left me-2"></i> Konsultasi Ulang</a>
-            </div>
-        <?php endif; ?>
-    </div>
-
-    <!-- Detail Distribusi Massa Dempster-Shafer -->
-    <div class="card card-custom p-4 p-md-5 border-0 shadow mt-4">
-        <h5 class="fw-bold border-bottom pb-2 mb-3">
-            <i class="fa-solid fa-atom me-2 text-primary"></i>Detail Distribusi Massa Dempster-Shafer
-        </h5>
-        <p class="text-muted small mb-4">
-            Tabel berikut menunjukkan nilai massa (<em>m</em>) dari setiap himpunan hipotesis
-            hasil kombinasi <strong>Dempster's Rule of Combination</strong>.
-            Total seluruh nilai massa = 1,000.
-        </p>
-        <div class="table-responsive">
-            <table class="table table-sm table-hover align-middle" style="font-size:0.9rem;">
-                <thead class="table-light">
-                    <tr>
-                        <th class="py-2 ps-3">Himpunan Hipotesis</th>
-                        <th class="py-2">Penyakit</th>
-                        <th class="py-2 text-center">Nilai Massa <em>m(A)</em></th>
-                        <th class="py-2">Visualisasi</th>
-                    </tr>
-                </thead>
-                <tbody>
+            <div class="card border-0 shadow-sm rounded-4 mb-4 h-100">
+                <div class="card-body p-4 p-md-5 d-flex flex-column justify-content-center text-center">
                     <?php
-                    // Tampilkan semua himpunan (termasuk multi-disease) diurutkan belief DESC
-                    $all_for_table = [];
-                    foreach ($combined_mass as $sk => $mv) {
-                        if ($mv < 0.0001) continue;
-                        $all_for_table[] = ['set_key' => $sk, 'mass' => $mv];
-                    }
-                    usort($all_for_table, fn($a,$b) => $b['mass'] <=> $a['mass']);
-                    foreach ($all_for_table as $row_ds):
-                        $sk = $row_ds['set_key'];
-                        $mv = $row_ds['mass'];
-                        $is_theta = ($sk === 'THETA');
-                        $kodes = $is_theta ? [] : explode('|', $sk);
-                        $label_parts = [];
-                        foreach ($kodes as $kp) {
-                            $label_parts[] = isset($nama_penyakit_map[$kp])
-                                ? htmlspecialchars($nama_penyakit_map[$kp]['nama_penyakit'])
-                                : htmlspecialchars($kp);
+                        $nilai_belief = $penyakit_tertinggi ? $penyakit_tertinggi['nilai_belief'] : 0;
+                        $persentase = $penyakit_tertinggi ? $penyakit_tertinggi['persentase'] : 0;
+                        
+                        $tingkat = "-";
+                        $badge_color = "bg-secondary";
+                        $text_color = "text-secondary";
+                        
+                        if ($nilai_belief >= 0.10 && $nilai_belief <= 0.40) {
+                            $tingkat = "Rendah";
+                            $badge_color = "bg-success bg-opacity-10 text-success";
+                            $text_color = "text-success";
+                        } elseif ($nilai_belief >= 0.41 && $nilai_belief <= 0.70) {
+                            $tingkat = "Sedang";
+                            $badge_color = "bg-warning bg-opacity-10 text-warning";
+                            $text_color = "text-warning";
+                        } elseif ($nilai_belief > 0.70 && $nilai_belief <= 1.00) {
+                            $tingkat = "Tinggi";
+                            $badge_color = "bg-danger bg-opacity-10 text-danger";
+                            $text_color = "text-danger";
+                        } else if ($nilai_belief > 0) {
+                            $tingkat = "Sangat Rendah";
+                            $badge_color = "bg-info bg-opacity-10 text-info";
+                            $text_color = "text-info";
                         }
-                        $is_multi = count($kodes) > 1;
-                        $bar_color = $is_theta ? 'bg-secondary' : ($is_multi ? 'bg-warning' : 'bg-primary');
                     ?>
-                    <tr>
-                        <td class="ps-3">
-                            <?php if ($is_theta): ?>
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1">Θ (THETA)</span>
-                            <?php elseif ($is_multi): ?>
-                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2 py-1">
-                                    {<?= htmlspecialchars(implode(', ', $kodes)); ?>}
-                                </span>
-                                <span class="ms-1 badge bg-warning text-dark" style="font-size:0.65rem;">gabungan</span>
-                            <?php else: ?>
-                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1">
-                                    {<?= htmlspecialchars($kodes[0]); ?>}
-                                </span>
-                            <?php endif; ?>
-                        </td>
-                        <td class="text-muted" style="font-size:0.85rem;">
-                            <?php if ($is_theta): ?>
-                                <em>Ketidakpastian (tidak diketahui)</em>
-                            <?php else: ?>
-                                <?= implode(' / ', $label_parts); ?>
-                            <?php endif; ?>
-                        </td>
-                        <td class="text-center fw-bold <?= $is_theta ? 'text-secondary' : 'text-primary' ?>">
-                            <?= number_format($mv, 4); ?>
-                        </td>
-                        <td style="min-width:120px;">
-                            <div class="progress" style="height:8px;">
-                                <div class="progress-bar <?= $bar_color ?>"
-                                     role="progressbar"
-                                     style="width:<?= round($mv * 100, 2) ?>%;"
-                                     aria-valuenow="<?= round($mv * 100, 2) ?>"
-                                     aria-valuemin="0" aria-valuemax="100">
+                    
+                    <p class="text-muted text-uppercase fw-semibold mb-3 tracking-wide">Tingkat Penyakit</p>
+                    <h2 class="fs-1 fw-bold mb-4 <?= $text_color ?>"><?= $tingkat ?></h2>
+                    
+                    <div class="d-inline-flex mx-auto align-items-center justify-content-center border rounded-pill px-4 py-2 mb-4 shadow-sm bg-white">
+                        <span class="text-muted me-2">Nilai Belief Akhir:</span> 
+                        <span class="text-primary fw-bold fs-5"><?= $persentase ?>%</span>
+                    </div>
+
+                    <div class="mt-2 text-start">
+                        <h6 class="text-muted mb-3 fw-bold">Keterangan Tingkat Penyakit:</h6>
+                        <div class="row g-2">
+                            <div class="col-4">
+                                <div class="p-3 border rounded-3 bg-light text-center transition-hover" style="transition: all 0.3s;">
+                                    <div class="fw-bold text-success fs-5">0.10 - 0.40</div>
+                                    <div class="text-muted small text-uppercase fw-semibold mt-1">Rendah</div>
                                 </div>
                             </div>
-                            <small class="text-muted"><?= round($mv * 100, 2) ?>%</small>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                    <!-- Baris total -->
-                    <tr class="table-light fw-bold border-top">
-                        <td class="ps-3" colspan="2">Total Massa</td>
-                        <td class="text-center text-success"><?= number_format(totalMass($combined_mass), 4); ?></td>
-                        <td></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <p class="text-muted small mt-2 mb-0">
-            <i class="fa-solid fa-circle-info me-1"></i>
-            <strong>Θ (Theta)</strong> = massa ketidakpastian. Semakin kecil nilainya, semakin tinggi keyakinan sistem terhadap diagnosis.
-            Himpunan <strong>gabungan</strong> (warna kuning) muncul ketika dua gejala mendukung penyakit berbeda sehingga menghasilkan irisan non-tunggal.
-        </p>
-    </div>
-
-    <!-- Proses Perhitungan -->
-    <div class="card card-custom p-4 p-md-5 border-0 shadow mt-4 mb-4">
-        <h5 class="fw-bold border-bottom pb-2 mb-3">
-            <i class="fa-solid fa-calculator me-2 text-primary"></i>Proses Perhitungan Dempster-Shafer
-        </h5>
-        <div class="accordion" id="accordionPerhitungan">
-            <?php foreach ($calculation_steps as $index => $step): ?>
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="heading<?= $index ?>">
-                        <button class="accordion-button <?= $index === 0 ? '' : 'collapsed' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#collapse<?= $index ?>" aria-expanded="<?= $index === 0 ? 'true' : 'false' ?>" aria-controls="collapse<?= $index ?>">
-                            Langkah <?= $index + 1 ?>: <?= $step['type'] === 'init' ? 'Inisialisasi Gejala ' . $step['gejala'] : 'Kombinasi dengan Gejala ' . $step['gejala'] ?>
-                        </button>
-                    </h2>
-                    <div id="collapse<?= $index ?>" class="accordion-collapse collapse <?= $index === 0 ? 'show' : '' ?>" aria-labelledby="heading<?= $index ?>" data-bs-parent="#accordionPerhitungan">
-                        <div class="accordion-body">
-                            <?php if ($step['type'] === 'init'): ?>
-                                <h6>Massa Awal (m1):</h6>
-                                <ul>
-                                <?php foreach ($step['m_baru'] as $k => $v): ?>
-                                    <li>m({<?= htmlspecialchars($k) ?>}) = <?= number_format($v, 4) ?></li>
-                                <?php endforeach; ?>
-                                </ul>
-                            <?php else: ?>
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <h6 class="text-secondary border-bottom pb-1">Massa Sebelumnya (m_lama):</h6>
-                                        <ul class="list-unstyled">
-                                        <?php foreach ($step['m_lama'] as $k => $v): ?>
-                                            <li>m({<?= htmlspecialchars($k) ?>}) = <?= number_format($v, 4) ?></li>
-                                        <?php endforeach; ?>
-                                        </ul>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <h6 class="text-primary border-bottom pb-1">Massa Gejala <?= $step['gejala'] ?> (m_baru):</h6>
-                                        <ul class="list-unstyled">
-                                        <?php foreach ($step['m_baru'] as $k => $v): ?>
-                                            <li>m({<?= htmlspecialchars($k) ?>}) = <?= number_format($v, 4) ?></li>
-                                        <?php endforeach; ?>
-                                        </ul>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <h6 class="text-success border-bottom pb-1">Hasil Kombinasi (m_gabungan):</h6>
-                                        <ul class="list-unstyled">
-                                        <?php foreach ($step['combined'] as $k => $v): ?>
-                                            <li><span class="fw-bold">m({<?= htmlspecialchars($k) ?>})</span> = <?= number_format($v, 4) ?></li>
-                                        <?php endforeach; ?>
-                                        </ul>
-                                    </div>
+                            <div class="col-4">
+                                <div class="p-3 border rounded-3 bg-light text-center transition-hover" style="transition: all 0.3s;">
+                                    <div class="fw-bold text-warning fs-5">0.41 - 0.70</div>
+                                    <div class="text-muted small text-uppercase fw-semibold mt-1">Sedang</div>
                                 </div>
-                            <?php endif; ?>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-3 border rounded-3 bg-light text-center transition-hover" style="transition: all 0.3s;">
+                                    <div class="fw-bold text-danger fs-5">0.71 - 1.00</div>
+                                    <div class="text-muted small text-uppercase fw-semibold mt-1">Tinggi</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            <?php endforeach; ?>
+            </div>
         </div>
     </div>
 
+    <!-- Tabel Gejala (Penyakit Yang Dialami) -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom py-4 px-4 d-flex align-items-center">
+            <span class="bg-primary bg-opacity-10 text-primary p-2 rounded-circle me-3"><i class="fa-solid fa-list-check"></i></span>
+            <h5 class="mb-0 fw-bold">Penyakit Yang Dialami</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="py-3 px-4 text-center text-muted text-uppercase" style="font-size: 0.85rem;" width="10%">Kode</th>
+                            <th class="py-3 text-muted text-uppercase" style="font-size: 0.85rem;">Gejala</th>
+                            <th class="py-3 text-muted text-uppercase" style="font-size: 0.85rem;">Penyakit</th>
+                            <th class="py-3 text-center text-muted text-uppercase" style="font-size: 0.85rem;" width="15%">Belief</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($gejala_terpilih_list as $g): ?>
+                            <?php 
+                                $kode = $g['kode_gejala'];
+                                $evidence = $evidence_per_gejala[$kode] ?? null;
+                                $penyakit_list_str = '-';
+                                $belief_val = 0;
+                                if ($evidence) {
+                                    $belief_val = $evidence['belief'];
+                                    $p_names = [];
+                                    foreach ($evidence['penyakit'] as $kp) {
+                                        if (isset($nama_penyakit_map[$kp])) {
+                                            $p_names[] = $nama_penyakit_map[$kp]['nama_penyakit'];
+                                        }
+                                    }
+                                    $penyakit_list_str = implode(', ', $p_names);
+                                }
+                            ?>
+                        <tr>
+                            <td class="px-4 text-center fw-semibold text-secondary"><?= $kode ?></td>
+                            <td class="fw-medium text-dark"><?= htmlspecialchars($g['nama_gejala']) ?></td>
+                            <td class="text-muted"><?= $penyakit_list_str ?></td>
+                            <td class="text-center fw-bold text-primary"><?= number_format($belief_val, 2) ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deskripsi dan Solusi -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 position-relative overflow-hidden">
+                <div class="position-absolute top-0 start-0 w-100 bg-info" style="height: 5px;"></div>
+                <div class="card-body p-4 p-md-5">
+                    <h5 class="fw-bold mb-4 d-flex align-items-center">
+                        <span class="bg-info bg-opacity-10 text-info p-2 rounded-circle me-3"><i class="fa-solid fa-circle-info"></i></span>
+                        Deskripsi Penyakit
+                    </h5>
+                    <?php if ($penyakit_tertinggi): ?>
+                        <?php 
+                            $kode_p = $penyakit_tertinggi['kode_penyakit'];
+                            $gambar_path = 'assets/img/penyakit/' . $kode_p . '.jpg';
+                            if (file_exists($gambar_path)) {
+                                $gambar = $gambar_path;
+                            } else {
+                                $gambar = 'https://placehold.co/600x400/e9ecef/495057?text=Gambar+' . urlencode($penyakit_tertinggi['nama_penyakit']);
+                            }
+                        ?>
+                        <div class="text-center mb-4">
+                            <img src="<?= $gambar ?>" alt="<?= htmlspecialchars($penyakit_tertinggi['nama_penyakit']) ?>" class="img-fluid rounded-4 shadow-sm" style="max-height: 250px; width: 100%; object-fit: cover;">
+                        </div>
+                    <?php endif; ?>
+                    <p class="fs-6 text-secondary" style="line-height: 1.8;">
+                        <?= $penyakit_tertinggi ? "Berdasarkan gejala yang Anda rasakan dan hasil perhitungan sistem pakar, Anda didiagnosis memiliki kemungkinan mengalami penyakit <strong class='text-primary fs-5'>" . htmlspecialchars($penyakit_tertinggi['nama_penyakit']) . "</strong>." : "Tidak ada penyakit yang spesifik terdeteksi." ?>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 position-relative overflow-hidden">
+                <div class="position-absolute top-0 start-0 w-100 bg-success" style="height: 5px;"></div>
+                <div class="card-body p-4 p-md-5">
+                    <h5 class="fw-bold mb-4 d-flex align-items-center">
+                        <span class="bg-success bg-opacity-10 text-success p-2 rounded-circle me-3"><i class="fa-solid fa-stethoscope"></i></span>
+                        Solusi / Pengobatan
+                    </h5>
+                    <p class="fs-6 text-secondary" style="line-height: 1.8;">
+                        <?= $penyakit_tertinggi ? nl2br(htmlspecialchars($penyakit_tertinggi['solusi'])) : "Silakan berkonsultasi lebih lanjut dengan tenaga medis profesional." ?>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Button Hasil Perhitungan -->
+    <div class="text-center mb-4">
+        <button type="button" class="btn btn-outline-primary rounded-pill px-5 py-3 fw-semibold shadow-sm border-2" data-bs-toggle="modal" data-bs-target="#modalPerhitungan">
+            <i class="fa-solid fa-calculator me-2"></i> Hasil Perhitungan
+        </button>
+    </div>
+
+    <!-- Modal Hasil Perhitungan -->
+    <div class="modal fade" id="modalPerhitungan" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-bottom py-3 px-4 bg-light rounded-top-4">
+                    <h5 class="modal-title fw-bold text-primary"><i class="fa-solid fa-calculator me-2"></i> Hasil Perhitungan Dempster-Shafer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 p-md-5">
+                    
+                    <!-- Detail Distribusi Massa Dempster-Shafer -->
+                    <h5 class="fw-bold border-bottom pb-2 mb-3">
+                        <i class="fa-solid fa-atom me-2 text-primary"></i>Detail Distribusi Massa Dempster-Shafer
+                    </h5>
+                    <div class="table-responsive mb-5">
+                        <table class="table table-hover align-middle border shadow-sm rounded-3 overflow-hidden" style="font-size:0.95rem;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="py-3 ps-4">Himpunan Hipotesis</th>
+                                    <th class="py-3">Penyakit</th>
+                                    <th class="py-3 text-center">Nilai Massa <em>m(A)</em></th>
+                                    <th class="py-3 pe-4">Visualisasi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php
+                                $all_for_table = [];
+                                foreach ($combined_mass as $sk => $mv) {
+                                    if ($mv < 0.0001) continue;
+                                    $all_for_table[] = ['set_key' => $sk, 'mass' => $mv];
+                                }
+                                usort($all_for_table, fn($a,$b) => $b['mass'] <=> $a['mass']);
+                                foreach ($all_for_table as $row_ds):
+                                    $sk = $row_ds['set_key'];
+                                    $mv = $row_ds['mass'];
+                                    $is_theta = ($sk === 'THETA');
+                                    $kodes = $is_theta ? [] : explode('|', $sk);
+                                    $label_parts = [];
+                                    foreach ($kodes as $kp) {
+                                        $label_parts[] = isset($nama_penyakit_map[$kp])
+                                            ? htmlspecialchars($nama_penyakit_map[$kp]['nama_penyakit'])
+                                            : htmlspecialchars($kp);
+                                    }
+                                    $is_multi = count($kodes) > 1;
+                                    $bar_color = $is_theta ? 'bg-secondary' : ($is_multi ? 'bg-warning' : 'bg-primary');
+                                ?>
+                                <tr>
+                                    <td class="ps-4">
+                                        <?php if ($is_theta): ?>
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1">Θ (THETA)</span>
+                                        <?php elseif ($is_multi): ?>
+                                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2 py-1">
+                                                {<?= htmlspecialchars(implode(', ', $kodes)); ?>}
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1">
+                                                {<?= htmlspecialchars($kodes[0]); ?>}
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-muted" style="font-size:0.9rem;">
+                                        <?php if ($is_theta): ?>
+                                            <em>Ketidakpastian</em>
+                                        <?php else: ?>
+                                            <?= implode(' / ', $label_parts); ?>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-center fw-bold <?= $is_theta ? 'text-secondary' : 'text-primary' ?>">
+                                        <?= number_format($mv, 4); ?>
+                                    </td>
+                                    <td class="pe-4" style="min-width:150px;">
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-2" style="height:8px;">
+                                                <div class="progress-bar <?= $bar_color ?>"
+                                                    role="progressbar"
+                                                    style="width:<?= round($mv * 100, 2) ?>%;"
+                                                    aria-valuenow="<?= round($mv * 100, 2) ?>"
+                                                    aria-valuemin="0" aria-valuemax="100">
+                                                </div>
+                                            </div>
+                                            <small class="text-muted fw-semibold" style="width: 40px; text-align: right;"><?= round($mv * 100, 2) ?>%</small>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                                <tr class="table-light fw-bold border-top">
+                                    <td class="ps-4" colspan="2">Total Massa</td>
+                                    <td class="text-center text-success fs-6"><?= number_format(totalMass($combined_mass), 4); ?></td>
+                                    <td></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Proses Perhitungan -->
+                    <h5 class="fw-bold border-bottom pb-2 mb-4 mt-4">
+                        <i class="fa-solid fa-list-ol me-2 text-primary"></i>Langkah Proses Perhitungan
+                    </h5>
+                    <div class="accordion shadow-sm" id="accordionPerhitungan">
+                        <?php foreach ($calculation_steps as $index => $step): ?>
+                            <div class="accordion-item border-0 border-bottom">
+                                <h2 class="accordion-header" id="heading<?= $index ?>">
+                                    <button class="accordion-button <?= $index === 0 ? '' : 'collapsed' ?> bg-light text-dark fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#collapse<?= $index ?>" aria-expanded="<?= $index === 0 ? 'true' : 'false' ?>" aria-controls="collapse<?= $index ?>">
+                                        Langkah <?= $index + 1 ?>: <?= $step['type'] === 'init' ? 'Inisialisasi Gejala ' . $step['gejala'] : 'Kombinasi dengan Gejala ' . $step['gejala'] ?>
+                                    </button>
+                                </h2>
+                                <div id="collapse<?= $index ?>" class="accordion-collapse collapse <?= $index === 0 ? 'show' : '' ?>" aria-labelledby="heading<?= $index ?>" data-bs-parent="#accordionPerhitungan">
+                                    <div class="accordion-body p-4">
+                                        <?php if ($step['type'] === 'init'): ?>
+                                            <h6 class="text-primary fw-bold mb-3">Massa Awal (m1):</h6>
+                                            <div class="d-flex flex-wrap gap-2">
+                                            <?php foreach ($step['m_baru'] as $k => $v): ?>
+                                                <span class="badge bg-white text-dark border p-2 shadow-sm">m({<?= htmlspecialchars($k) ?>}) = <span class="text-primary"><?= number_format($v, 4) ?></span></span>
+                                            <?php endforeach; ?>
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="row g-4">
+                                                <div class="col-md-4">
+                                                    <div class="p-3 bg-white border rounded-3 h-100">
+                                                        <h6 class="text-secondary border-bottom pb-2 mb-3 fw-bold">Massa Sebelumnya (m_lama)</h6>
+                                                        <ul class="list-unstyled mb-0">
+                                                        <?php foreach ($step['m_lama'] as $k => $v): ?>
+                                                            <li class="mb-1">m({<?= htmlspecialchars($k) ?>}) = <?= number_format($v, 4) ?></li>
+                                                        <?php endforeach; ?>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="p-3 bg-white border rounded-3 h-100">
+                                                        <h6 class="text-primary border-bottom pb-2 mb-3 fw-bold">Massa Gejala <?= $step['gejala'] ?> (m_baru)</h6>
+                                                        <ul class="list-unstyled mb-0">
+                                                        <?php foreach ($step['m_baru'] as $k => $v): ?>
+                                                            <li class="mb-1">m({<?= htmlspecialchars($k) ?>}) = <?= number_format($v, 4) ?></li>
+                                                        <?php endforeach; ?>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="p-3 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded-3 h-100">
+                                                        <h6 class="text-success border-bottom border-success border-opacity-25 pb-2 mb-3 fw-bold">Hasil Kombinasi (m_gabungan)</h6>
+                                                        <ul class="list-unstyled mb-0">
+                                                        <?php foreach ($step['combined'] as $k => $v): ?>
+                                                            <li class="mb-1"><span class="fw-bold">m({<?= htmlspecialchars($k) ?>})</span> = <span class="text-primary fw-bold"><?= number_format($v, 4) ?></span></li>
+                                                        <?php endforeach; ?>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top-0 rounded-bottom-4">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Peringatan Medis -->
     <div class="alert alert-warning border-0 mt-4 rounded-4 shadow-sm text-dark bg-warning bg-opacity-10 d-flex align-items-start gap-3 p-4">
         <i class="fa-solid fa-triangle-exclamation fs-3 text-warning mt-1"></i>

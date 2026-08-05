@@ -62,11 +62,18 @@ while ($row = mysqli_fetch_assoc($result_gejala)) {
                         <?php if (count($gejalaList) > 0): ?>
                             <?php foreach ($gejalaList as $g) : ?>
                                 <div class="col-md-6">
-                                    <input type="checkbox" name="gejala[]" value="<?= $g['kode_gejala']; ?>" id="gejala_<?= $g['kode_gejala']; ?>" class="symptom-checkbox">
-                                    <label for="gejala_<?= $g['kode_gejala']; ?>" class="symptom-label w-100 h-100">
-                                        <div class="checkbox-circle flex-shrink-0"></div>
-                                        <span class="ps-1"><strong>[<?= $g['kode_gejala']; ?>]</strong> <?= htmlspecialchars($g['nama_gejala']); ?></span>
-                                    </label>
+                                    <div class="p-3 border rounded h-100 bg-white">
+                                        <label class="form-label mb-2 d-block text-dark">
+                                            <strong>[<?= $g['kode_gejala']; ?>]</strong> <?= htmlspecialchars($g['nama_gejala']); ?>
+                                        </label>
+                                        <select name="gejala[<?= $g['kode_gejala']; ?>]" class="form-select symptom-select">
+                                            <option value="">-- Tidak Dipilih --</option>
+                                            <option value="1">Sangat Yakin</option>
+                                            <option value="0.8">Yakin</option>
+                                            <option value="0.4">Kurang Yakin</option>
+                                            <option value="0.2">Tidak Tahu</option>
+                                        </select>
+                                    </div>
                                 </div>
                             <?php endforeach; ?>
                         <?php else: ?>
@@ -92,15 +99,23 @@ while ($row = mysqli_fetch_assoc($result_gejala)) {
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    const checkboxes = document.querySelectorAll('.symptom-checkbox');
+    const selects = document.querySelectorAll('.symptom-select');
     const maxAllowed = 4;
     
-    checkboxes.forEach(function(checkbox) {
-        checkbox.addEventListener('change', function() {
-            const checkedCount = document.querySelectorAll('.symptom-checkbox:checked').length;
-            if (checkedCount > maxAllowed) {
-                this.checked = false;
+    selects.forEach(function(select) {
+        select.dataset.prev = select.value;
+        
+        select.addEventListener('change', function() {
+            let selectedCount = 0;
+            selects.forEach(s => {
+                if (s.value !== "") selectedCount++;
+            });
+            
+            if (selectedCount > maxAllowed) {
                 alert("Maksimal gejala yang dapat dipilih adalah " + maxAllowed + "!");
+                this.value = this.dataset.prev;
+            } else {
+                this.dataset.prev = this.value;
             }
         });
     });

@@ -16,7 +16,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard | SkinExpert</title>
+    <title>Admin Dashboard | Puskesmas Siompu</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -92,7 +92,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <!-- Sidebar -->
     <nav id="sidebar">
         <div class="sidebar-header d-flex align-items-center">
-            <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-stethoscope text-primary me-2"></i> SkinExpert</h5>
+            <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-stethoscope text-primary me-2"></i> Puskesmas Siompu</h5>
         </div>
         
         <div class="p-0">
@@ -130,7 +130,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <button type="button" id="sidebarCollapse" class="btn btn-light d-lg-none me-2">
                     <i class="fa-solid fa-bars"></i>
                 </button>
-                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-stethoscope text-primary"></i> SkinExpert</h5>
+                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-stethoscope text-primary"></i> Puskesmas Siompu</h5>
             </div>
             <div class="d-none d-lg-block">
                 <span class="text-muted fw-medium"><i class="fa-regular fa-calendar me-2"></i> <?= date('d F Y'); ?></span>
