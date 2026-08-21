@@ -89,8 +89,18 @@ if (is_array($gejala_arr)) {
             </tr>
         </table>
 
-        <!-- Gejala Section -->
+        <!-- Foto Kondisi Kulit Pasien -->
+        <?php if (!empty($data['foto_pasien']) && file_exists('assets/img/pasien/' . $data['foto_pasien'])): ?>
+        <h6 class="fw-bold mb-2">A. Foto Kondisi Kulit Pasien:</h6>
+        <div class="mb-4 text-center">
+            <img src="assets/img/pasien/<?= htmlspecialchars($data['foto_pasien']); ?>" 
+                 alt="Foto Kondisi Kulit" 
+                 style="max-height: 200px; max-width: 300px; border: 1px solid #ccc; padding: 4px;">
+        </div>
+        <h6 class="fw-bold mb-2">B. Gejala Yang Dilaporkan:</h6>
+        <?php else: ?>
         <h6 class="fw-bold mb-2">A. Gejala Yang Dilaporkan:</h6>
+        <?php endif; ?>
         <ul class="mb-4">
             <?php foreach($gejala_list as $g): ?>
                 <li>[<?= $g['kode_gejala']; ?>] <?= htmlspecialchars($g['nama_gejala']); ?></li>
@@ -98,7 +108,8 @@ if (is_array($gejala_arr)) {
         </ul>
 
         <!-- Hasil Section -->
-        <h6 class="fw-bold mb-2">B. Hasil Analisis Dempster-Shafer:</h6>
+        <?php $section_hasil = (!empty($data['foto_pasien']) && file_exists('assets/img/pasien/' . $data['foto_pasien'])) ? 'C' : 'B'; ?>
+        <h6 class="fw-bold mb-2"><?= $section_hasil; ?>. Hasil Analisis Dempster-Shafer:</h6>
         <div class="border border-dark p-3 mb-4 text-center">
             Berdasarkan gejala yang dipilih, kemungkinan besar pasien mengalami:
             <h3 class="fw-bold text-uppercase mt-2"><?= htmlspecialchars($data['nama_penyakit']); ?></h3>

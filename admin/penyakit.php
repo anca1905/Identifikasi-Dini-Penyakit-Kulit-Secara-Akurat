@@ -5,6 +5,14 @@ require_once 'includes/header.php';
 // Hapus Data
 if (isset($_GET['del'])) {
     $kode = mysqli_real_escape_string($koneksi, $_GET['del']);
+    
+    // Hapus gambar jika ada
+    $cek_gambar_lama = mysqli_query($koneksi, "SELECT gambar FROM penyakit WHERE kode_penyakit='$kode'");
+    $row_lama = mysqli_fetch_assoc($cek_gambar_lama);
+    if ($row_lama['gambar'] && file_exists('../assets/img/penyakit/' . $row_lama['gambar'])) {
+        unlink('../assets/img/penyakit/' . $row_lama['gambar']);
+    }
+    
     mysqli_query($koneksi, "DELETE FROM penyakit WHERE kode_penyakit='$kode'");
     echo "<script>alert('Data berhasil dihapus!'); window.location='penyakit.php';</script>";
     exit;
@@ -16,11 +24,19 @@ if (isset($_POST['add'])) {
     $nama = mysqli_real_escape_string($koneksi, $_POST['nama_penyakit']);
     $solusi = mysqli_real_escape_string($koneksi, $_POST['solusi']);
     
+    // Handle File Upload
+    $gambar = '';
+    if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] == 0) {
+        $ext = pathinfo($_FILES['gambar']['name'], PATHINFO_EXTENSION);
+        $gambar = $kode . '_' . time() . '.' . $ext;
+        move_uploaded_file($_FILES['gambar']['tmp_name'], '../assets/img/penyakit/' . $gambar);
+    }
+    
     $cek = mysqli_query($koneksi, "SELECT * FROM penyakit WHERE kode_penyakit='$kode'");
     if (mysqli_num_rows($cek) > 0) {
         echo "<script>alert('Error: Kode Penyakit tersebut sudah digunakan!');</script>";
     } else {
-        mysqli_query($koneksi, "INSERT INTO penyakit (kode_penyakit, nama_penyakit, solusi) VALUES ('$kode', '$nama', '$solusi')");
+        mysqli_query($koneksi, "INSERT INTO penyakit (kode_penyakit, nama_penyakit, solusi, gambar) VALUES ('$kode', '$nama', '$solusi', '$gambar')");
         echo "<script>alert('Data penyakit berhasil ditambahkan!'); window.location='penyakit.php';</script>";
         exit;
     }
@@ -32,7 +48,24 @@ if (isset($_POST['edit'])) {
     $nama = mysqli_real_escape_string($koneksi, $_POST['nama_penyakit']);
     $solusi = mysqli_real_escape_string($koneksi, $_POST['solusi']);
     
-    mysqli_query($koneksi, "UPDATE penyakit SET nama_penyakit='$nama', solusi='$solusi' WHERE kode_penyakit='$kode'");
+    // Handle File Upload
+    $gambar_update = "";
+    if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] == 0) {
+        $ext = pathinfo($_FILES['gambar']['name'], PATHINFO_EXTENSION);
+        $gambar = $kode . '_' . time() . '.' . $ext;
+        move_uploaded_file($_FILES['gambar']['tmp_name'], '../assets/img/penyakit/' . $gambar);
+        
+        // Hapus gambar lama jika ada
+        $cek_gambar_lama = mysqli_query($koneksi, "SELECT gambar FROM penyakit WHERE kode_penyakit='$kode'");
+        $row_lama = mysqli_fetch_assoc($cek_gambar_lama);
+        if ($row_lama['gambar'] && file_exists('../assets/img/penyakit/' . $row_lama['gambar'])) {
+            unlink('../assets/img/penyakit/' . $row_lama['gambar']);
+        }
+        
+        $gambar_update = ", gambar='$gambar'";
+    }
+    
+    mysqli_query($koneksi, "UPDATE penyakit SET nama_penyakit='$nama', solusi='$solusi' $gambar_update WHERE kode_penyakit='$kode'");
     echo "<script>alert('Data penyakit berhasil diperbarui!'); window.location='penyakit.php';</script>";
     exit;
 }
@@ -80,7 +113,7 @@ $query = mysqli_query($koneksi, "SELECT * FROM penyakit ORDER BY kode_penyakit A
                         <!-- Modal Edit -->
                         <div class="modal fade" id="editModal<?= $row['kode_penyakit']; ?>" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog">
-                                <form action="" method="POST">
+                                <form action="" method="POST" enctype="multipart/form-data">
                                     <div class="modal-content border-0 shadow rounded-4">
                                         <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
                                             <h5 class="modal-title fw-bold">Edit Data Penyakit</h5>
@@ -100,6 +133,16 @@ $query = mysqli_query($koneksi, "SELECT * FROM penyakit ORDER BY kode_penyakit A
                                             <div class="mb-3">
                                                 <label class="form-label fw-semibold">Solusi & Penanganan</label>
                                                 <textarea name="solusi" class="form-control form-control-lg" rows="4" required><?= htmlspecialchars($row['solusi']); ?></textarea>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-semibold">Gambar Penyakit</label>
+                                                <input type="file" name="gambar" class="form-control form-control-lg" accept="image/*">
+                                                <?php if(!empty($row['gambar'])): ?>
+                                                    <div class="mt-2">
+                                                        <img src="../assets/img/penyakit/<?= $row['gambar'] ?>" alt="Gambar Saat Ini" class="img-thumbnail" style="max-height: 100px;">
+                                                    </div>
+                                                <?php endif; ?>
+                                                <small class="text-muted">Biarkan kosong jika tidak ingin mengubah gambar.</small>
                                             </div>
                                         </div>
                                         <div class="modal-footer border-top-0 pb-4 px-4">
@@ -124,7 +167,7 @@ $query = mysqli_query($koneksi, "SELECT * FROM penyakit ORDER BY kode_penyakit A
 <!-- Modal Tambah -->
 <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
-        <form action="" method="POST">
+        <form action="" method="POST" enctype="multipart/form-data">
             <div class="modal-content border-0 shadow rounded-4">
                 <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
                     <h5 class="modal-title fw-bold">Tambah Data Penyakit</h5>
@@ -142,6 +185,10 @@ $query = mysqli_query($koneksi, "SELECT * FROM penyakit ORDER BY kode_penyakit A
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Solusi Pengobatan <span class="text-danger">*</span></label>
                         <textarea name="solusi" class="form-control form-control-lg" rows="4" placeholder="Tuliskan saran penanganan di sini..." required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Gambar Penyakit</label>
+                        <input type="file" name="gambar" class="form-control form-control-lg" accept="image/*">
                     </div>
                 </div>
                 <div class="modal-footer border-top-0 pb-4 px-4">

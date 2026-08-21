@@ -36,6 +36,24 @@ $jenis_kelamin = mysqli_real_escape_string($koneksi, $_POST['jenis_kelamin']);
 $alamat = mysqli_real_escape_string($koneksi, $_POST['alamat'] ?? '');
 $gejala_json = json_encode($selected_gejala);
 
+// Proses Upload Foto Pasien
+$foto_pasien = '';
+if (isset($_FILES['foto_pasien']) && $_FILES['foto_pasien']['error'] === UPLOAD_ERR_OK) {
+    $upload_dir = 'assets/img/pasien/';
+    if (!is_dir($upload_dir)) {
+        mkdir($upload_dir, 0777, true);
+    }
+    $ext = strtolower(pathinfo($_FILES['foto_pasien']['name'], PATHINFO_EXTENSION));
+    $allowed_ext = ['jpg', 'jpeg', 'png', 'webp'];
+    $max_size = 2 * 1024 * 1024; // 2MB
+    if (in_array($ext, $allowed_ext) && $_FILES['foto_pasien']['size'] <= $max_size) {
+        $nama_file = 'pasien_' . time() . '_' . mt_rand(1000, 9999) . '.' . $ext;
+        if (move_uploaded_file($_FILES['foto_pasien']['tmp_name'], $upload_dir . $nama_file)) {
+            $foto_pasien = $nama_file;
+        }
+    }
+}
+
 // Format array string (untuk referensi query SQL)
 $gejala_in = "'" . implode("','", array_map(function ($val) use ($koneksi) {
     return mysqli_real_escape_string($koneksi, $val);
@@ -171,11 +189,13 @@ foreach ($combined_mass as $set_key => $mass_value) {
     // Bangun label nama & ambil solusi (hanya jika single)
     $nama_list = [];
     $solusi    = '';
+    $gambar_db = '';
     foreach ($kode_list as $kp) {
         if (isset($nama_penyakit_map[$kp])) {
             $nama_list[] = $nama_penyakit_map[$kp]['nama_penyakit'];
             if (count($kode_list) === 1) {
                 $solusi = $nama_penyakit_map[$kp]['solusi'];
+                $gambar_db = $nama_penyakit_map[$kp]['gambar'] ?? '';
             }
         }
     }
@@ -186,6 +206,7 @@ foreach ($combined_mass as $set_key => $mass_value) {
         'set_key'       => $set_key,                        // Key lengkap himpunan DS
         'nama_penyakit' => implode(' / ', $nama_list),     // Label tampilan
         'solusi'        => $solusi,
+        'gambar'        => $gambar_db,
         'nilai_belief'  => $mass_value,
         'persentase'    => $persentase,
         'is_single'     => count($kode_list) === 1,
@@ -215,8 +236,9 @@ if ($penyakit_tertinggi) {
     // Simpan kode penyakit tunggal yang valid sebagai FK
     $kp = mysqli_real_escape_string($koneksi, $penyakit_tertinggi['kode_penyakit']);
     $nb = $penyakit_tertinggi['persentase'];
-    $sql_insert = "INSERT INTO riwayat_konsultasi (nama_pasien, umur, jenis_kelamin, alamat, gejala_terpilih, kode_penyakit, nilai_belief)
-                   VALUES ('$nama_pasien', $umur, '$jenis_kelamin', '$alamat', '$gejala_json', '$kp', $nb)";
+    $fp = mysqli_real_escape_string($koneksi, $foto_pasien);
+    $sql_insert = "INSERT INTO riwayat_konsultasi (nama_pasien, umur, jenis_kelamin, alamat, gejala_terpilih, kode_penyakit, nilai_belief, foto_pasien)
+                   VALUES ('$nama_pasien', $umur, '$jenis_kelamin', '$alamat', '$gejala_json', '$kp', $nb, '$fp')";
     if (mysqli_query($koneksi, $sql_insert)) {
         $id_riwayat = mysqli_insert_id($koneksi);
     }
@@ -247,6 +269,15 @@ if ($penyakit_tertinggi) {
                     <h5 class="mb-0 fw-semibold"><i class="fa-solid fa-user-injured me-2"></i> Data Pasien</h5>
                 </div>
                 <div class="card-body p-4 bg-light">
+                    <?php if (!empty($foto_pasien) && file_exists('assets/img/pasien/' . $foto_pasien)): ?>
+                        <div class="text-center mb-3">
+                            <img src="assets/img/pasien/<?= htmlspecialchars($foto_pasien) ?>" 
+                                 alt="Foto Kondisi Kulit Pasien" 
+                                 class="img-fluid rounded-3 shadow-sm border"
+                                 style="max-height: 200px; width: 100%; object-fit: cover;">
+                            <small class="text-muted d-block mt-1"><i class="fa-solid fa-camera me-1"></i>Foto Kondisi Kulit</small>
+                        </div>
+                    <?php endif; ?>
                     <ul class="list-unstyled mb-0 fs-6">
                         <li class="mb-3 border-bottom pb-2">
                             <span class="text-muted d-block mb-1">Nama Pasien</span>
@@ -393,11 +424,17 @@ if ($penyakit_tertinggi) {
                     <?php if ($penyakit_tertinggi): ?>
                         <?php 
                             $kode_p = $penyakit_tertinggi['kode_penyakit'];
-                            $gambar_path = 'assets/img/penyakit/' . $kode_p . '.jpg';
-                            if (file_exists($gambar_path)) {
-                                $gambar = $gambar_path;
+                            $gambar_db = $penyakit_tertinggi['gambar'] ?? '';
+                            $gambar = '';
+                            if (!empty($gambar_db) && file_exists('assets/img/penyakit/' . $gambar_db)) {
+                                $gambar = 'assets/img/penyakit/' . $gambar_db;
                             } else {
-                                $gambar = 'https://placehold.co/600x400/e9ecef/495057?text=Gambar+' . urlencode($penyakit_tertinggi['nama_penyakit']);
+                                $gambar_path = 'assets/img/penyakit/' . $kode_p . '.jpg';
+                                if (file_exists($gambar_path)) {
+                                    $gambar = $gambar_path;
+                                } else {
+                                    $gambar = 'https://placehold.co/600x400/e9ecef/495057?text=Gambar+' . urlencode($penyakit_tertinggi['nama_penyakit']);
+                                }
                             }
                         ?>
                         <div class="text-center mb-4">

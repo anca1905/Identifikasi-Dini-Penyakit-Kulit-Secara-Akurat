@@ -18,6 +18,7 @@ CREATE TABLE `penyakit` (
   `kode_penyakit` varchar(10) NOT NULL,
   `nama_penyakit` varchar(100) NOT NULL,
   `solusi` text NOT NULL,
+  `gambar` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`kode_penyakit`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

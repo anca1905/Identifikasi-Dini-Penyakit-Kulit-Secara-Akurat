@@ -106,6 +106,16 @@ function buildQuery($overrides = []) {
                                     <i class="fa-solid <?= ($row['jenis_kelamin']=='Laki-laki') ? 'fa-mars text-primary':'fa-venus text-danger'; ?> me-1"></i>
                                     <?= $row['jenis_kelamin']; ?>, <?= $row['umur']; ?> Thn
                                 </div>
+                                <?php if (!empty($row['foto_pasien']) && file_exists('../assets/img/pasien/' . $row['foto_pasien'])): ?>
+                                    <div class="mt-1">
+                                        <img src="../assets/img/pasien/<?= htmlspecialchars($row['foto_pasien']); ?>" 
+                                             alt="Foto Kulit" 
+                                             class="rounded border shadow-sm" 
+                                             style="width:50px; height:50px; object-fit:cover; cursor:pointer;"
+                                             title="Foto kondisi kulit pasien"
+                                             onclick="window.open(this.src,'_blank')">
+                                    </div>
+                                <?php endif; ?>
                             </td>
                             <td class="px-3 text-muted small"><?= htmlspecialchars($row['alamat'] ?: '-'); ?></td>
                             <td class="px-3">

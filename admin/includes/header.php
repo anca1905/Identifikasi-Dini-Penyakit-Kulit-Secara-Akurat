@@ -137,8 +137,30 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </div>
             <div class="d-flex align-items-center gap-2">
                 <a href="../index.php" class="btn btn-sm btn-light border d-none d-md-inline-flex align-items-center" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square me-2 text-muted"></i> Website</a>
-                <a href="logout.php" class="btn btn-sm btn-danger d-inline-flex align-items-center px-3" onclick="return confirm('Anda yakin ingin mengakhiri sesi?')"><i class="fa-solid fa-right-from-bracket me-2"></i> Keluar</a>
+                <a href="#" class="btn btn-sm btn-danger d-inline-flex align-items-center px-3" data-bs-toggle="modal" data-bs-target="#logoutModal"><i class="fa-solid fa-right-from-bracket me-2"></i> Keluar</a>
             </div>
         </div>
         
+        <!-- Logout Modal -->
+        <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+              <div class="modal-header border-0 pb-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body text-center pb-4">
+                <div class="mb-3 text-warning">
+                    <i class="fa-solid fa-circle-exclamation" style="font-size: 4rem;"></i>
+                </div>
+                <h4 class="mb-3 fw-bold">Konfirmasi Logout</h4>
+                <p class="text-muted mb-4">Apakah Anda yakin ingin mengakhiri sesi ini dan keluar?</p>
+                <div class="d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Batal</button>
+                    <a href="logout.php" class="btn btn-danger px-4">Ya, Keluar</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="container-fluid px-4 px-md-5">

@@ -22,7 +22,7 @@ while ($row = mysqli_fetch_assoc($result_gejala)) {
                     <p class="text-muted">Isi biodata Anda dan pilih gejala yang sedang Anda alami untuk mendapatkan hasil diagnosis awal.</p>
                 </div>
                 
-                <form action="hasil.php" method="POST">
+                <form action="hasil.php" method="POST" enctype="multipart/form-data">
                     
                     <!-- Biodata Pasien -->
                     <h4 class="mb-4 fs-5 border-bottom pb-2">1. Biodata Pasien</h4>
@@ -51,6 +51,21 @@ while ($row = mysqli_fetch_assoc($result_gejala)) {
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">Alamat Lengkap</label>
                             <input type="text" name="alamat" class="form-control form-control-lg" placeholder="Contoh: Jl. Merdeka No. 10, Jakarta" required>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">Foto Kondisi Kulit <span class="text-muted fw-normal">(Opsional)</span></label>
+                            <div class="upload-area border rounded-3 p-4 text-center bg-light position-relative" id="uploadArea" style="cursor: pointer; border-style: dashed !important; border-color: #0d6efd !important;">
+                                <input type="file" name="foto_pasien" id="fotoInput" accept="image/*" class="position-absolute top-0 start-0 w-100 h-100 opacity-0" style="cursor: pointer; z-index: 2;">
+                                <div id="uploadPlaceholder">
+                                    <i class="fa-solid fa-camera fs-2 text-primary mb-2"></i>
+                                    <p class="mb-1 fw-semibold text-dark">Klik atau seret foto ke sini</p>
+                                    <p class="text-muted small mb-0">Format: JPG, PNG, WEBP &bull; Maks. 2MB</p>
+                                </div>
+                                <div id="uploadPreview" class="d-none">
+                                    <img id="previewImg" src="" alt="Preview" class="img-fluid rounded-3" style="max-height: 220px; object-fit: cover;">
+                                    <p class="mt-2 mb-0 text-success fw-semibold"><i class="fa-solid fa-circle-check me-1"></i> <span id="previewName"></span></p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -99,6 +114,7 @@ while ($row = mysqli_fetch_assoc($result_gejala)) {
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+    // === Gejala max 4 ===
     const selects = document.querySelectorAll('.symptom-select');
     const maxAllowed = 4;
     
@@ -119,6 +135,35 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
     });
+
+    // === Preview Foto Upload ===
+    const fotoInput = document.getElementById('fotoInput');
+    const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+    const uploadPreview = document.getElementById('uploadPreview');
+    const previewImg = document.getElementById('previewImg');
+    const previewName = document.getElementById('previewName');
+
+    if (fotoInput) {
+        fotoInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const maxSize = 2 * 1024 * 1024; // 2MB
+                if (file.size > maxSize) {
+                    alert('Ukuran foto melebihi 2MB. Silakan pilih foto yang lebih kecil.');
+                    this.value = '';
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    previewName.textContent = file.name;
+                    uploadPlaceholder.classList.add('d-none');
+                    uploadPreview.classList.remove('d-none');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
 });
 </script>
 

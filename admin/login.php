@@ -104,5 +104,40 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<?php if (isset($_GET['logout']) && $_GET['logout'] == 'success'): ?>
+<!-- Logout Success Modal -->
+<div class="modal fade" id="logoutSuccessModal" tabindex="-1" aria-labelledby="logoutSuccessModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0 pb-0">
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center pb-4">
+        <div class="mb-3 text-success">
+            <i class="fa-solid fa-circle-check" style="font-size: 4rem;"></i>
+        </div>
+        <h4 class="mb-3 fw-bold">Logout Berhasil!</h4>
+        <p class="text-muted mb-4">Anda telah berhasil keluar dari sistem admin.</p>
+        <button type="button" class="btn btn-primary px-4" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var logoutSuccessModal = new bootstrap.Modal(document.getElementById('logoutSuccessModal'));
+        logoutSuccessModal.show();
+        
+        if (window.history.replaceState) {
+            var url = new URL(window.location.href);
+            url.searchParams.delete('logout');
+            window.history.replaceState({path: url.href}, '', url.href);
+        }
+    });
+</script>
+<?php endif; ?>
+
 </body>
 </html>
