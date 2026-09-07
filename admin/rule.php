@@ -6,7 +6,7 @@ require_once 'includes/header.php';
 if (isset($_GET['del'])) {
     $id = (int) $_GET['del'];
     mysqli_query($koneksi, "DELETE FROM basis_pengetahuan WHERE id_rule=$id");
-    echo "<script>alert('Rule pakar berhasil dihapus!'); window.location='rule.php';</script>";
+    echo "<script>Swal.fire({title: 'Berhasil!', text: 'Rule pakar berhasil dihapus!', icon: 'success', confirmButtonText: 'OK'}).then(()=> { window.location='rule.php'; });</script>";
     exit;
 }
 
@@ -19,10 +19,10 @@ if (isset($_POST['add'])) {
     // Validasi rule ganda
     $cek = mysqli_query($koneksi, "SELECT * FROM basis_pengetahuan WHERE kode_penyakit='$kode_p' AND kode_gejala='$kode_g'");
     if (mysqli_num_rows($cek) > 0) {
-        echo "<script>alert('Error: Basis Pengetahuan untuk kombinasi ini sudah ada!');</script>";
+        echo "<script>Swal.fire({title: 'Gagal!', text: 'Error: Basis Pengetahuan untuk kombinasi ini sudah ada!', icon: 'error', confirmButtonText: 'OK'});</script>";
     } else {
         mysqli_query($koneksi, "INSERT INTO basis_pengetahuan (kode_penyakit, kode_gejala, nilai_densitas) VALUES ('$kode_p', '$kode_g', $bobot)");
-        echo "<script>alert('Rule berhasil ditambahkan!'); window.location='rule.php';</script>";
+        echo "<script>Swal.fire({title: 'Berhasil!', text: 'Rule berhasil ditambahkan!', icon: 'success', confirmButtonText: 'OK'}).then(()=> { window.location='rule.php'; });</script>";
         exit;
     }
 }
@@ -37,10 +37,10 @@ if (isset($_POST['edit'])) {
     // Cek duplikasi jika diubah ke relasi lain
     $cek = mysqli_query($koneksi, "SELECT * FROM basis_pengetahuan WHERE kode_penyakit='$kode_p' AND kode_gejala='$kode_g' AND id_rule != $id_rule");
     if (mysqli_num_rows($cek) > 0) {
-        echo "<script>alert('Gagal! Kombinasi rule sudah ada!');</script>";
+        echo "<script>Swal.fire({title: 'Gagal!', text: 'Gagal! Kombinasi rule sudah ada!', icon: 'error', confirmButtonText: 'OK'});</script>";
     } else {
         mysqli_query($koneksi, "UPDATE basis_pengetahuan SET kode_penyakit='$kode_p', kode_gejala='$kode_g', nilai_densitas=$bobot WHERE id_rule=$id_rule");
-        echo "<script>alert('Rule berhasil diperbarui!'); window.location='rule.php';</script>";
+        echo "<script>Swal.fire({title: 'Berhasil!', text: 'Rule berhasil diperbarui!', icon: 'success', confirmButtonText: 'OK'}).then(()=> { window.location='rule.php'; });</script>";
         exit;
     }
 }
@@ -101,7 +101,7 @@ $arr_g = []; while ($r = mysqli_fetch_assoc($list_g)) $arr_g[] = $r;
                                 <button class="btn btn-sm btn-outline-primary rounded-circle me-1" data-bs-toggle="modal" data-bs-target="#editModal<?= $row['id_rule']; ?>" title="Edit Rule">
                                     <i class="fa-solid fa-pen-to-square"></i>
                                 </button>
-                                <a href="rule.php?del=<?= $row['id_rule']; ?>" class="btn btn-sm btn-outline-danger rounded-circle" onclick="return confirm('Yakin ingin menghapus Rule ini?');" title="Hapus Rule">
+                                <a href="rule.php?del=<?= $row['id_rule']; ?>" class="btn btn-sm btn-outline-danger rounded-circle" onclick="confirmDelete(event, this.href, 'Yakin ingin menghapus Rule ini?')" title="Hapus Rule">
                                     <i class="fa-solid fa-trash"></i>
                                 </a>
                             </td>

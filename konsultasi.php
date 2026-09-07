@@ -126,9 +126,13 @@ document.addEventListener("DOMContentLoaded", function() {
             selects.forEach(s => {
                 if (s.value !== "") selectedCount++;
             });
-            
             if (selectedCount > maxAllowed) {
-                alert("Maksimal gejala yang dapat dipilih adalah " + maxAllowed + "!");
+                Swal.fire({
+                    title: 'Peringatan',
+                    text: 'Maksimal gejala yang dapat dipilih adalah ' + maxAllowed + '!',
+                    icon: 'warning',
+                    confirmButtonText: 'Mengerti'
+                });
                 this.value = this.dataset.prev;
             } else {
                 this.dataset.prev = this.value;
@@ -149,7 +153,12 @@ document.addEventListener("DOMContentLoaded", function() {
             if (file) {
                 const maxSize = 2 * 1024 * 1024; // 2MB
                 if (file.size > maxSize) {
-                    alert('Ukuran foto melebihi 2MB. Silakan pilih foto yang lebih kecil.');
+                    Swal.fire({
+                        title: 'Peringatan',
+                        text: 'Ukuran foto melebihi 2MB. Silakan pilih foto yang lebih kecil.',
+                        icon: 'warning',
+                        confirmButtonText: 'Mengerti'
+                    });
                     this.value = '';
                     return;
                 }

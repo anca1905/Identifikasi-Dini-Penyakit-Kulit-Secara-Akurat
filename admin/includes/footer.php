@@ -22,6 +22,25 @@
                 });
             }
         });
+
+        // SweetAlert Confirm Delete
+        function confirmDelete(event, url, message) {
+            event.preventDefault();
+            Swal.fire({
+                title: 'Konfirmasi Hapus',
+                text: message || 'Apakah Anda yakin ingin menghapus data ini?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = url;
+                }
+            });
+        }
     </script>
 </body>
 </html>

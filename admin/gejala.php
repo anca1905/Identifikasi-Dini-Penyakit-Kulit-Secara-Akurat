@@ -6,7 +6,7 @@ require_once 'includes/header.php';
 if (isset($_GET['del'])) {
     $kode = mysqli_real_escape_string($koneksi, $_GET['del']);
     mysqli_query($koneksi, "DELETE FROM gejala WHERE kode_gejala='$kode'");
-    echo "<script>alert('Data berhasil dihapus!'); window.location='gejala.php';</script>";
+    echo "<script>Swal.fire({title: 'Berhasil!', text: 'Data berhasil dihapus!', icon: 'success', confirmButtonText: 'OK'}).then(()=> { window.location='gejala.php'; });</script>";
     exit;
 }
 
@@ -17,10 +17,10 @@ if (isset($_POST['add'])) {
     
     $cek = mysqli_query($koneksi, "SELECT * FROM gejala WHERE kode_gejala='$kode'");
     if (mysqli_num_rows($cek) > 0) {
-        echo "<script>alert('Error: Kode Gejala tersebut sudah digunakan!');</script>";
+        echo "<script>Swal.fire({title: 'Gagal!', text: 'Error: Kode Gejala tersebut sudah digunakan!', icon: 'error', confirmButtonText: 'OK'});</script>";
     } else {
         mysqli_query($koneksi, "INSERT INTO gejala (kode_gejala, nama_gejala) VALUES ('$kode', '$nama')");
-        echo "<script>alert('Data gejala berhasil ditambahkan!'); window.location='gejala.php';</script>";
+        echo "<script>Swal.fire({title: 'Berhasil!', text: 'Data gejala berhasil ditambahkan!', icon: 'success', confirmButtonText: 'OK'}).then(()=> { window.location='gejala.php'; });</script>";
         exit;
     }
 }
@@ -31,7 +31,7 @@ if (isset($_POST['edit'])) {
     $nama = mysqli_real_escape_string($koneksi, $_POST['nama_gejala']);
     
     mysqli_query($koneksi, "UPDATE gejala SET nama_gejala='$nama' WHERE kode_gejala='$kode'");
-    echo "<script>alert('Data gejala berhasil diperbarui!'); window.location='gejala.php';</script>";
+    echo "<script>Swal.fire({title: 'Berhasil!', text: 'Data gejala berhasil diperbarui!', icon: 'success', confirmButtonText: 'OK'}).then(()=> { window.location='gejala.php'; });</script>";
     exit;
 }
 
@@ -66,7 +66,7 @@ $query = mysqli_query($koneksi, "SELECT * FROM gejala ORDER BY kode_gejala ASC")
                                 <button class="btn btn-sm btn-outline-primary rounded-circle me-1" data-bs-toggle="modal" data-bs-target="#editModal<?= $row['kode_gejala']; ?>" title="Edit">
                                     <i class="fa-solid fa-pen"></i>
                                 </button>
-                                <a href="gejala.php?del=<?= $row['kode_gejala']; ?>" class="btn btn-sm btn-outline-danger rounded-circle" onclick="return confirm('Yakin ingin menghapus <?=$row['nama_gejala'];?>?');" title="Hapus">
+                                <a href="gejala.php?del=<?= $row['kode_gejala']; ?>" class="btn btn-sm btn-outline-danger rounded-circle" onclick="confirmDelete(event, this.href, 'Yakin ingin menghapus <?=$row['nama_gejala'];?>?')" title="Hapus">
                                     <i class="fa-solid fa-trash"></i>
                                 </a>
                             </td>

@@ -4,7 +4,7 @@ require_once 'includes/koneksi.php';
 require_once 'includes/header.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo "<script>alert('Akses ditolak!'); window.location='konsultasi.php';</script>";
+    echo "<script>Swal.fire({title: 'Akses Ditolak!', text: 'Silahkan isi form konsultasi terlebih dahulu.', icon: 'error', confirmButtonText: 'OK'}).then(()=> { window.location='konsultasi.php'; });</script>";
     exit;
 }
 
@@ -20,12 +20,12 @@ foreach ($gejala_raw as $kode => $bobot) {
 }
 
 if (count($selected_gejala) === 0) {
-    echo "<script>alert('Harap pilih minimal satu gejala!'); window.history.back();</script>";
+    echo "<script>Swal.fire({title: 'Peringatan', text: 'Harap pilih minimal satu gejala!', icon: 'warning', confirmButtonText: 'OK'}).then(()=> { window.history.back(); });</script>";
     exit;
 }
 
 if (count($selected_gejala) > 4) {
-    echo "<script>alert('Maksimal gejala yang dapat dipilih adalah 4!'); window.history.back();</script>";
+    echo "<script>Swal.fire({title: 'Peringatan', text: 'Maksimal gejala yang dapat dipilih adalah 4!', icon: 'warning', confirmButtonText: 'OK'}).then(()=> { window.history.back(); });</script>";
     exit;
 }
 
@@ -117,7 +117,10 @@ while ($row = mysqli_fetch_assoc($res_rules)) {
 foreach ($evidence_per_gejala as $g => &$data) {
     $expert_belief = max($data['beliefs']);
     $user_belief = $user_weights[$g] ?? 1.0;
-    $data['belief'] = $expert_belief * $user_belief;
+    
+    // Batasi belief maksimal menjadi 0.99 untuk menghindari konflik total (pembagian dengan nol)
+    // pada Dempster's Rule ketika ada dua gejala dengan kepastian mutlak (1.0) yang saling bertentangan.
+    $data['belief'] = min($expert_belief * $user_belief, 0.99);
 }
 unset($data);
 

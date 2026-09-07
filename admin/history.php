@@ -6,14 +6,14 @@ require_once 'includes/header.php';
 if (isset($_GET['del'])) {
     $id = (int) $_GET['del'];
     mysqli_query($koneksi, "DELETE FROM riwayat_konsultasi WHERE id_riwayat=$id");
-    echo "<script>alert('Riwayat konsultasi berhasil dihapus!'); window.location='history.php';</script>";
+    echo "<script>Swal.fire({title: 'Berhasil!', text: 'Riwayat konsultasi berhasil dihapus!', icon: 'success', confirmButtonText: 'OK'}).then(()=> { window.location='history.php'; });</script>";
     exit;
 }
 
 // Reset Semua Data
 if (isset($_GET['reset'])) {
     mysqli_query($koneksi, "TRUNCATE TABLE riwayat_konsultasi");
-    echo "<script>alert('Semua data riwayat konsultasi telah dikosongkan!'); window.location='history.php';</script>";
+    echo "<script>Swal.fire({title: 'Berhasil!', text: 'Semua data riwayat konsultasi telah dikosongkan!', icon: 'success', confirmButtonText: 'OK'}).then(()=> { window.location='history.php'; });</script>";
     exit;
 }
 
@@ -73,7 +73,7 @@ function buildQuery($overrides = []) {
         <p class="text-muted mb-0 small">Menampilkan semua arsip diagnosa penyakit kulit dari pasien/user yang menggunakan aplikasi.</p>
     </div>
     <?php if($total_data > 0): ?>
-    <a href="history.php?reset=1" onclick="return confirm('Peringatan: Aksi ini akan menghapus SELURUH riwayat pasien. Lanjutkan?')" class="btn btn-outline-danger rounded-pill px-4">
+    <a href="history.php?reset=1" onclick="confirmDelete(event, this.href, 'Peringatan: Aksi ini akan menghapus SELURUH riwayat pasien. Lanjutkan?')" class="btn btn-outline-danger rounded-pill px-4">
         <i class="fa-solid fa-triangle-exclamation me-1"></i> Bersihkan Semua Data
     </a>
     <?php endif; ?>
@@ -157,7 +157,7 @@ function buildQuery($overrides = []) {
                                 <a href="history.php?del=<?= $row['id_riwayat']; ?>" 
                                    class="btn btn-sm btn-outline-danger rounded-2 mb-1" 
                                    title="Hapus" style="width:32px;height:32px;padding:0;line-height:30px;"
-                                   onclick="return confirm('Yakin ingin menghapus riwayat ini?');">
+                                   onclick="confirmDelete(event, this.href, 'Yakin ingin menghapus riwayat ini?')">
                                     <i class="fa-solid fa-trash"></i>
                                 </a>
                             </td>

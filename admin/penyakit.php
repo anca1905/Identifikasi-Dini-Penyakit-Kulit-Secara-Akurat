@@ -14,7 +14,7 @@ if (isset($_GET['del'])) {
     }
     
     mysqli_query($koneksi, "DELETE FROM penyakit WHERE kode_penyakit='$kode'");
-    echo "<script>alert('Data berhasil dihapus!'); window.location='penyakit.php';</script>";
+    echo "<script>Swal.fire({title: 'Berhasil!', text: 'Data berhasil dihapus!', icon: 'success', confirmButtonText: 'OK'}).then(()=> { window.location='penyakit.php'; });</script>";
     exit;
 }
 
@@ -29,15 +29,19 @@ if (isset($_POST['add'])) {
     if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] == 0) {
         $ext = pathinfo($_FILES['gambar']['name'], PATHINFO_EXTENSION);
         $gambar = $kode . '_' . time() . '.' . $ext;
-        move_uploaded_file($_FILES['gambar']['tmp_name'], '../assets/img/penyakit/' . $gambar);
+        $upload_dir = '../assets/img/penyakit/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0777, true);
+        }
+        move_uploaded_file($_FILES['gambar']['tmp_name'], $upload_dir . $gambar);
     }
     
     $cek = mysqli_query($koneksi, "SELECT * FROM penyakit WHERE kode_penyakit='$kode'");
     if (mysqli_num_rows($cek) > 0) {
-        echo "<script>alert('Error: Kode Penyakit tersebut sudah digunakan!');</script>";
+        echo "<script>Swal.fire({title: 'Gagal!', text: 'Error: Kode Penyakit tersebut sudah digunakan!', icon: 'error', confirmButtonText: 'OK'});</script>";
     } else {
         mysqli_query($koneksi, "INSERT INTO penyakit (kode_penyakit, nama_penyakit, solusi, gambar) VALUES ('$kode', '$nama', '$solusi', '$gambar')");
-        echo "<script>alert('Data penyakit berhasil ditambahkan!'); window.location='penyakit.php';</script>";
+        echo "<script>Swal.fire({title: 'Berhasil!', text: 'Data penyakit berhasil ditambahkan!', icon: 'success', confirmButtonText: 'OK'}).then(()=> { window.location='penyakit.php'; });</script>";
         exit;
     }
 }
@@ -53,7 +57,11 @@ if (isset($_POST['edit'])) {
     if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] == 0) {
         $ext = pathinfo($_FILES['gambar']['name'], PATHINFO_EXTENSION);
         $gambar = $kode . '_' . time() . '.' . $ext;
-        move_uploaded_file($_FILES['gambar']['tmp_name'], '../assets/img/penyakit/' . $gambar);
+        $upload_dir = '../assets/img/penyakit/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0777, true);
+        }
+        move_uploaded_file($_FILES['gambar']['tmp_name'], $upload_dir . $gambar);
         
         // Hapus gambar lama jika ada
         $cek_gambar_lama = mysqli_query($koneksi, "SELECT gambar FROM penyakit WHERE kode_penyakit='$kode'");
@@ -66,7 +74,7 @@ if (isset($_POST['edit'])) {
     }
     
     mysqli_query($koneksi, "UPDATE penyakit SET nama_penyakit='$nama', solusi='$solusi' $gambar_update WHERE kode_penyakit='$kode'");
-    echo "<script>alert('Data penyakit berhasil diperbarui!'); window.location='penyakit.php';</script>";
+    echo "<script>Swal.fire({title: 'Berhasil!', text: 'Data penyakit berhasil diperbarui!', icon: 'success', confirmButtonText: 'OK'}).then(()=> { window.location='penyakit.php'; });</script>";
     exit;
 }
 
@@ -104,7 +112,7 @@ $query = mysqli_query($koneksi, "SELECT * FROM penyakit ORDER BY kode_penyakit A
                                 <button class="btn btn-sm btn-outline-primary rounded-circle me-1" data-bs-toggle="modal" data-bs-target="#editModal<?= $row['kode_penyakit']; ?>" title="Edit">
                                     <i class="fa-solid fa-pen"></i>
                                 </button>
-                                <a href="penyakit.php?del=<?= $row['kode_penyakit']; ?>" class="btn btn-sm btn-outline-danger rounded-circle" onclick="return confirm('Yakin ingin menghapus <?=$row['nama_penyakit'];?>? Data aturan(rule) yang berelasi juga akan terhapus!');" title="Hapus">
+                                <a href="penyakit.php?del=<?= $row['kode_penyakit']; ?>" class="btn btn-sm btn-outline-danger rounded-circle" onclick="confirmDelete(event, this.href, 'Yakin ingin menghapus <?=$row['nama_penyakit'];?>? Data aturan(rule) yang berelasi juga akan terhapus!')" title="Hapus">
                                     <i class="fa-solid fa-trash"></i>
                                 </a>
                             </td>
