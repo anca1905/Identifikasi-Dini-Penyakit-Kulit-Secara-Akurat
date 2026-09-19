@@ -129,7 +129,7 @@ function buildQuery($overrides = []) {
                             </td>
                             <td class="px-3">
                                 <span class="badge bg-primary bg-opacity-10 text-primary px-2 py-1 rounded-pill fw-semibold" style="font-size:0.8rem;">
-                                    <?= htmlspecialchars($row['nama_penyakit']); ?>
+                                    <?= htmlspecialchars($row['nama_penyakit'] ?? 'Tidak Diketahui'); ?>
                                 </span>
                             </td>
                             <td class="px-3 text-center">

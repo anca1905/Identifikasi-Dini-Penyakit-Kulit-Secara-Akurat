@@ -87,6 +87,11 @@ if (is_array($gejala_arr)) {
                 <td>:</td>
                 <td><?= $data['umur']; ?> Tahun / <?= $data['jenis_kelamin']; ?></td>
             </tr>
+            <tr>
+                <td class="fw-bold">Alamat</td>
+                <td>:</td>
+                <td><?= htmlspecialchars($data['alamat']); ?></td>
+            </tr>
         </table>
 
         <!-- Foto Kondisi Kulit Pasien -->
@@ -112,14 +117,14 @@ if (is_array($gejala_arr)) {
         <h6 class="fw-bold mb-2"><?= $section_hasil; ?>. Hasil Analisis Dempster-Shafer:</h6>
         <div class="border border-dark p-3 mb-4 text-center">
             Berdasarkan gejala yang dipilih, kemungkinan besar pasien mengalami:
-            <h3 class="fw-bold text-uppercase mt-2"><?= htmlspecialchars($data['nama_penyakit']); ?></h3>
+            <h3 class="fw-bold text-uppercase mt-2"><?= htmlspecialchars($data['nama_penyakit'] ?? 'Tidak Diketahui'); ?></h3>
             <p class="mb-0 fw-bold">Tingkat Keyakinan Sistem: <?= $data['nilai_belief']; ?>%</p>
         </div>
 
         <!-- Solusi Section -->
         <h6 class="fw-bold mb-2">C. Rekomendasi Penanganan Pertama:</h6>
         <div class="border border-dark p-3 mb-5" style="text-align: justify;">
-            <?= nl2br(htmlspecialchars($data['solusi'])); ?>
+            <?= nl2br(htmlspecialchars($data['solusi'] ?? 'Silakan konsultasi lebih lanjut dengan dokter.')); ?>
         </div>
 
         <div class="row">

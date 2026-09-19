@@ -123,10 +123,11 @@ $q_latest = mysqli_query($koneksi, "SELECT r.*, p.nama_penyakit FROM riwayat_kon
                                     <td>
                                         <div class="fw-medium text-dark"><?= htmlspecialchars($row['nama_pasien']); ?></div>
                                         <div class="small text-muted"><?= $row['umur']; ?> Thn, <?= $row['jenis_kelamin'] == 'Laki-laki' ? 'L' : 'P'; ?></div>
+                                        <div class="small text-muted"><?= htmlspecialchars($row['alamat']); ?></div>
                                     </td>
                                     <td>
                                         <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill px-3 py-2 fw-medium">
-                                            <?= htmlspecialchars($row['nama_penyakit']); ?>
+                                            <?= htmlspecialchars($row['nama_penyakit'] ?? 'Tidak Diketahui'); ?>
                                         </span>
                                     </td>
                                     <td class="text-center">
