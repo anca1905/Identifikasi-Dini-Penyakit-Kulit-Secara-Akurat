@@ -163,3 +163,142 @@ function totalMass(array $massFunction): float
 {
     return array_sum($massFunction);
 }
+
+/**
+ * Format angka desimal sesuai standar penulisan ilmiah Indonesia (koma sebagai pemisah desimal).
+ */
+function formatNumDS(float|int|string $num, int $dec = 4): string
+{
+    return number_format((float)$num, $dec, ',', '.');
+}
+
+/**
+ * Memformat representasi string himpunan menjadi notasi matematika.
+ * Contoh: "P01|P02" => "{P01, P02}", "THETA" => "{Θ}", "" => "∅"
+ */
+function formatSetNotation(string $setKey): string
+{
+    if ($setKey === 'THETA') return '{Θ}';
+    if ($setKey === '' || $setKey === 'EMPTY') return '∅';
+    $arr = explode('|', $setKey);
+    return '{' . implode(', ', $arr) . '}';
+}
+
+/**
+ * Memformat himpunan lengkap dengan nama penyakitnya.
+ */
+function formatSetNotationWithNames(string $setKey, array $nama_penyakit_map): string
+{
+    if ($setKey === 'THETA') return '{Θ} (Ketidakpastian)';
+    if ($setKey === '' || $setKey === 'EMPTY') return '∅ (Konflik)';
+    
+    $arr = explode('|', $setKey);
+    $names = [];
+    foreach ($arr as $kp) {
+        $names[] = isset($nama_penyakit_map[$kp]) ? $nama_penyakit_map[$kp]['nama_penyakit'] : $kp;
+    }
+    return '{' . implode(', ', $arr) . '} (' . implode(', ', $names) . ')';
+}
+
+/**
+ * Kombinasi Dempster-Shafer dengan merekam seluruh data detail:
+ * matriks perkalian baris x kolom, nilai konflik K, faktor normalisasi (1 - K),
+ * dan pemecahan langkah pembagian matematis untuk tiap hipotesis.
+ *
+ * @param array $m_lama
+ * @param array $m_baru
+ * @param string $label_lama
+ * @param string $label_baru
+ * @param string $label_hasil
+ * @return array
+ */
+function kombinasiDSDetail(array $m_lama, array $m_baru, string $label_lama = 'm1', string $label_baru = 'm2', string $label_hasil = 'm3'): array
+{
+    $matrix = [];
+    $conflict_cells = [];
+    $K = 0.0;
+    $grouped = [];
+
+    foreach ($m_lama as $setR => $valR) {
+        $matrix[$setR] = [];
+        foreach ($m_baru as $setC => $valC) {
+            $product = (float)$valR * (float)$valC;
+            $intersection = intersectSets((string)$setR, (string)$setC);
+            $matrix[$setR][$setC] = [
+                'setR' => (string)$setR,
+                'valR' => (float)$valR,
+                'setC' => (string)$setC,
+                'valC' => (float)$valC,
+                'intersection' => $intersection,
+                'product' => $product
+            ];
+
+            if ($intersection === '') {
+                $K += $product;
+                $conflict_cells[] = [
+                    'setR' => (string)$setR,
+                    'setC' => (string)$setC,
+                    'valR' => (float)$valR,
+                    'valC' => (float)$valC,
+                    'product' => $product
+                ];
+            } else {
+                if (!isset($grouped[$intersection])) {
+                    $grouped[$intersection] = [];
+                }
+                $grouped[$intersection][] = $product;
+            }
+        }
+    }
+
+    $one_minus_K = 1.0 - $K;
+    $result_mass = [];
+    $equations = [];
+
+    if (abs($one_minus_K) < 1e-10) {
+        return [
+            'label_hasil' => $label_hasil,
+            'label_lama' => $label_lama,
+            'label_baru' => $label_baru,
+            'matrix' => $matrix,
+            'conflict_cells' => $conflict_cells,
+            'K' => $K,
+            'one_minus_K' => 0.0,
+            'equations' => [],
+            'result_mass' => ['THETA' => 1.0]
+        ];
+    }
+
+    foreach ($grouped as $setKey => $products) {
+        $sum = array_sum($products);
+        $normalized = $sum / $one_minus_K;
+        if ($normalized > 1e-10) {
+            $result_mass[$setKey] = $normalized;
+            $equations[] = [
+                'set' => $setKey,
+                'products' => $products,
+                'sum' => $sum,
+                'normalized' => $normalized
+            ];
+        }
+    }
+
+    // Urutkan equations: THETA di akhir, sisanya berdasarkan nilai normalized DESC
+    usort($equations, function($a, $b) {
+        if ($a['set'] === 'THETA') return 1;
+        if ($b['set'] === 'THETA') return -1;
+        return $b['normalized'] <=> $a['normalized'];
+    });
+
+    return [
+        'label_hasil' => $label_hasil,
+        'label_lama' => $label_lama,
+        'label_baru' => $label_baru,
+        'matrix' => $matrix,
+        'conflict_cells' => $conflict_cells,
+        'K' => $K,
+        'one_minus_K' => $one_minus_K,
+        'equations' => $equations,
+        'result_mass' => $result_mass
+    ];
+}
