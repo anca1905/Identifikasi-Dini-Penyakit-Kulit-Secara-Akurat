@@ -350,27 +350,40 @@ if ($penyakit_tertinggi) {
                         $badge_color = "bg-secondary";
                         $text_color = "text-secondary";
                         
-                        if ($nilai_belief >= 0.10 && $nilai_belief <= 0.40) {
-                            $tingkat = "Rendah";
-                            $badge_color = "bg-success bg-opacity-10 text-success";
-                            $text_color = "text-success";
-                        } elseif ($nilai_belief >= 0.41 && $nilai_belief <= 0.70) {
-                            $tingkat = "Sedang";
-                            $badge_color = "bg-warning bg-opacity-10 text-warning";
-                            $text_color = "text-warning";
-                        } elseif ($nilai_belief > 0.70 && $nilai_belief <= 1.00) {
-                            $tingkat = "Tinggi";
-                            $badge_color = "bg-danger bg-opacity-10 text-danger";
-                            $text_color = "text-danger";
-                        } else if ($nilai_belief > 0) {
-                            $tingkat = "Sangat Rendah";
-                            $badge_color = "bg-info bg-opacity-10 text-info";
-                            $text_color = "text-info";
+                        if ($penyakit_tertinggi) {
+                            $b = round($nilai_belief, 2);
+                            if ($b >= 0.80) {
+                                $tingkat = "Tinggi";
+                                $badge_color = "bg-danger bg-opacity-10 text-danger";
+                                $text_color = "text-danger";
+                            } elseif ($b >= 0.60) {
+                                $tingkat = "Sedang";
+                                $badge_color = "bg-warning bg-opacity-10 text-warning";
+                                $text_color = "text-warning";
+                            } else {
+                                $tingkat = "Rendah";
+                                $badge_color = "bg-success bg-opacity-10 text-success";
+                                $text_color = "text-success";
+                            }
                         }
+
+                        $is_terdeteksi = ($penyakit_tertinggi && $tingkat !== 'Rendah' && $tingkat !== '-');
                     ?>
                     
-                    <p class="text-muted text-uppercase fw-semibold mb-3 tracking-wide">Tingkat Penyakit</p>
-                    <h2 class="fs-1 fw-bold mb-4 <?= $text_color ?>"><?= $tingkat ?></h2>
+                    <p class="text-muted text-uppercase fw-semibold mb-2 tracking-wide">Tingkat Penyakit</p>
+                    <h2 class="fs-1 fw-bold mb-3 <?= $text_color ?>"><?= $tingkat ?></h2>
+
+                    <div class="mb-3">
+                        <?php if (!$is_terdeteksi): ?>
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-3 py-2 rounded-pill fs-6 fw-semibold">
+                                <i class="fa-solid fa-circle-question me-1"></i> Penyakit Tidak Terdeteksi
+                            </span>
+                        <?php else: ?>
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill fs-6 fw-semibold">
+                                <i class="fa-solid fa-virus me-1"></i> Terdeteksi: <?= htmlspecialchars($penyakit_tertinggi['nama_penyakit']) ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
                     
                     <div class="d-inline-flex mx-auto align-items-center justify-content-center border rounded-pill px-4 py-2 mb-4 shadow-sm bg-white">
                         <span class="text-muted me-2">Nilai Belief Akhir:</span> 
@@ -382,19 +395,19 @@ if ($penyakit_tertinggi) {
                         <div class="row g-2">
                             <div class="col-4">
                                 <div class="p-3 border rounded-3 bg-light text-center transition-hover" style="transition: all 0.3s;">
-                                    <div class="fw-bold text-success fs-5">0.10 - 0.40</div>
+                                    <div class="fw-bold text-success fs-5">0,00 - 0,59</div>
                                     <div class="text-muted small text-uppercase fw-semibold mt-1">Rendah</div>
                                 </div>
                             </div>
                             <div class="col-4">
                                 <div class="p-3 border rounded-3 bg-light text-center transition-hover" style="transition: all 0.3s;">
-                                    <div class="fw-bold text-warning fs-5">0.41 - 0.70</div>
+                                    <div class="fw-bold text-warning fs-5">0,60 - 0,79</div>
                                     <div class="text-muted small text-uppercase fw-semibold mt-1">Sedang</div>
                                 </div>
                             </div>
                             <div class="col-4">
                                 <div class="p-3 border rounded-3 bg-light text-center transition-hover" style="transition: all 0.3s;">
-                                    <div class="fw-bold text-danger fs-5">0.71 - 1.00</div>
+                                    <div class="fw-bold text-danger fs-5">0,80 - 1,00</div>
                                     <div class="text-muted small text-uppercase fw-semibold mt-1">Tinggi</div>
                                 </div>
                             </div>
@@ -405,11 +418,11 @@ if ($penyakit_tertinggi) {
         </div>
     </div>
 
-    <!-- Tabel Gejala (Penyakit Yang Dialami) -->
+    <!-- Tabel Gejala (Gejala Yang Dialami) -->
     <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
         <div class="card-header bg-white border-bottom py-4 px-4 d-flex align-items-center">
             <span class="bg-primary bg-opacity-10 text-primary p-2 rounded-circle me-3"><i class="fa-solid fa-list-check"></i></span>
-            <h5 class="mb-0 fw-bold">Penyakit Yang Dialami</h5>
+            <h5 class="mb-0 fw-bold">Gejala Yang Dialami Pasien</h5>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -418,7 +431,7 @@ if ($penyakit_tertinggi) {
                         <tr>
                             <th class="py-3 px-4 text-center text-muted text-uppercase" style="font-size: 0.85rem;" width="10%">Kode</th>
                             <th class="py-3 text-muted text-uppercase" style="font-size: 0.85rem;">Gejala</th>
-                            <th class="py-3 text-muted text-uppercase" style="font-size: 0.85rem;">Penyakit</th>
+                            <th class="py-3 text-muted text-uppercase" style="font-size: 0.85rem;">Indikasi Penyakit Terkait</th>
                             <th class="py-3 text-center text-muted text-uppercase" style="font-size: 0.85rem;" width="15%">Belief</th>
                         </tr>
                     </thead>
@@ -457,13 +470,13 @@ if ($penyakit_tertinggi) {
     <div class="row g-4 mb-5">
         <div class="col-md-6">
             <div class="card border-0 shadow-sm rounded-4 h-100 position-relative overflow-hidden">
-                <div class="position-absolute top-0 start-0 w-100 bg-info" style="height: 5px;"></div>
+                <div class="position-absolute top-0 start-0 w-100 <?= $is_terdeteksi ? 'bg-info' : 'bg-secondary' ?>" style="height: 5px;"></div>
                 <div class="card-body p-4 p-md-5">
                     <h5 class="fw-bold mb-4 d-flex align-items-center">
                         <span class="bg-info bg-opacity-10 text-info p-2 rounded-circle me-3"><i class="fa-solid fa-circle-info"></i></span>
-                        Deskripsi Penyakit
+                        <?= $is_terdeteksi ? 'Deskripsi Penyakit' : 'Hasil Diagnosis' ?>
                     </h5>
-                    <?php if ($penyakit_tertinggi): ?>
+                    <?php if ($is_terdeteksi): ?>
                         <?php 
                             $kode_p = $penyakit_tertinggi['kode_penyakit'];
                             $gambar_db = $penyakit_tertinggi['gambar'] ?? '';
@@ -482,10 +495,24 @@ if ($penyakit_tertinggi) {
                         <div class="text-center mb-4">
                             <img src="<?= $gambar ?>" alt="<?= htmlspecialchars($penyakit_tertinggi['nama_penyakit']) ?>" class="img-fluid rounded-4 shadow-sm" style="max-height: 250px; width: 100%; object-fit: cover;">
                         </div>
+                        <p class="fs-6 text-secondary" style="line-height: 1.8;">
+                            Berdasarkan gejala yang Anda rasakan dan hasil perhitungan sistem pakar, Anda didiagnosis memiliki kemungkinan mengalami penyakit <strong class='text-primary fs-5'><?= htmlspecialchars($penyakit_tertinggi['nama_penyakit']) ?></strong>.
+                        </p>
+                    <?php else: ?>
+                        <div class="text-center py-4 px-3 mb-4 bg-light rounded-4 border border-dashed">
+                            <div class="display-5 text-secondary opacity-50 mb-2"><i class="fa-solid fa-circle-question"></i></div>
+                            <h5 class="fw-bold text-dark mb-1">Penyakit Tidak Terdeteksi</h5>
+                            <p class="text-muted small mb-0">Tingkat keyakinan sistem berada pada kategori <strong>Rendah (<?= $persentase ?>%)</strong></p>
+                        </div>
+                        <div class="alert alert-secondary border-0 rounded-3 mb-3">
+                            <i class="fa-solid fa-circle-info me-2 text-primary"></i>
+                            <strong>Status Diagnosis:</strong> Penyakit Tidak Terdeteksi
+                        </div>
+                        <p class="fs-6 text-secondary" style="line-height: 1.8;">
+                            Berdasarkan gejala yang Anda pilih dan hasil perhitungan sistem pakar, tingkat keyakinan sistem berada pada kategori <strong>Rendah (0,00 – 0,59)</strong> dengan persentase <strong><?= $persentase ?>%</strong>. 
+                            Karena nilai keyakinan berada di bawah ambang batas minimum (60%), sistem <strong>tidak mendeteksi adanya penyakit kulit tertentu secara spesifik</strong>.
+                        </p>
                     <?php endif; ?>
-                    <p class="fs-6 text-secondary" style="line-height: 1.8;">
-                        <?= $penyakit_tertinggi ? "Berdasarkan gejala yang Anda rasakan dan hasil perhitungan sistem pakar, Anda didiagnosis memiliki kemungkinan mengalami penyakit <strong class='text-primary fs-5'>" . htmlspecialchars($penyakit_tertinggi['nama_penyakit']) . "</strong>." : "Tidak ada penyakit yang spesifik terdeteksi." ?>
-                    </p>
                 </div>
             </div>
         </div>
@@ -495,11 +522,23 @@ if ($penyakit_tertinggi) {
                 <div class="card-body p-4 p-md-5">
                     <h5 class="fw-bold mb-4 d-flex align-items-center">
                         <span class="bg-success bg-opacity-10 text-success p-2 rounded-circle me-3"><i class="fa-solid fa-stethoscope"></i></span>
-                        Solusi / Pengobatan
+                        Solusi / Rekomendasi
                     </h5>
-                    <p class="fs-6 text-secondary" style="line-height: 1.8;">
-                        <?= $penyakit_tertinggi ? nl2br(htmlspecialchars($penyakit_tertinggi['solusi'])) : "Silakan berkonsultasi lebih lanjut dengan tenaga medis profesional." ?>
-                    </p>
+                    <?php if ($is_terdeteksi): ?>
+                        <p class="fs-6 text-secondary" style="line-height: 1.8;">
+                            <?= nl2br(htmlspecialchars($penyakit_tertinggi['solusi'])) ?>
+                        </p>
+                    <?php else: ?>
+                        <div class="p-3 bg-light rounded-3 mb-3 border-start border-success border-4">
+                            <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-notes-medical me-2 text-success"></i>Rekomendasi Penanganan:</h6>
+                            <ul class="text-secondary small mb-0 ps-3" style="line-height: 1.8;">
+                                <li>Karena penyakit tidak terdeteksi secara pasti, sangat dianjurkan untuk berkonsultasi langsung dengan dokter spesialis kulit atau tenaga medis di Puskesmas Siompu untuk pemeriksaan fisik klinis.</li>
+                                <li>Jaga kebersihan area kulit yang bermasalah, mandi dengan air bersih dan sabun lembut, serta gunakan pakaian yang bersih dan menyerap keringat.</li>
+                                <li>Hindari menggaruk kulit secara berlebihan untuk mencegah terjadinya iritasi atau infeksi bakteri sekunder.</li>
+                                <li>Jangan menggunakan salep antibiotik atau obat keras tanpa anjuran/resep resmi dari dokter.</li>
+                            </ul>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -887,14 +926,16 @@ if ($penyakit_tertinggi) {
                                     <?= formatNumDS($mv * 100, 2) ?>%
                                 </td>
                                 <td>
-                                    <?php if ($is_highest): ?>
+                                    <?php if ($is_highest && $is_terdeteksi): ?>
                                         <span class="badge bg-success px-3 py-2 rounded-pill">Nilai Tertinggi (Diagnosa Terpilih)</span>
+                                    <?php elseif ($is_highest): ?>
+                                        <span class="badge bg-secondary px-3 py-2 rounded-pill">Nilai Tertinggi (Keyakinan Rendah - Tidak Terdeteksi)</span>
                                     <?php elseif ($is_theta): ?>
                                         <span class="badge bg-secondary bg-opacity-20 text-secondary px-2 py-1 rounded-pill">Ketidakpastian Lingkungan</span>
                                     <?php elseif (count($kodes) > 1): ?>
                                         <span class="badge bg-warning bg-opacity-20 text-warning px-2 py-1 rounded-pill">Himpunan Campuran</span>
                                     <?php else: ?>
-                                        <span class="text-muted small">Lebih rendah dari <?= htmlspecialchars($penyakit_tertinggi['kode_penyakit'] ?? '') ?></span>
+                                        <span class="text-muted small"><?= $is_terdeteksi ? 'Lebih rendah dari ' . htmlspecialchars($penyakit_tertinggi['kode_penyakit'] ?? '') : 'Massa Kepercayaan' ?></span>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -914,12 +955,26 @@ if ($penyakit_tertinggi) {
                     <h5 class="fw-bold text-primary mb-2">
                         <i class="fa-solid fa-square-check me-2"></i>Kesimpulan Akhir Diagnosis:
                     </h5>
+                    <?php if (!$is_terdeteksi): ?>
+                    <p class="fs-6 text-dark mb-0" style="line-height: 1.8;">
+                        Berdasarkan hasil analisis perhitungan metode Dempster-Shafer terhadap gejala yang dipilih, nilai keyakinan yang diperoleh sistem berada pada kategori <strong>Rendah (0,00 – 0,59)</strong> dengan nilai sebesar <strong class="text-secondary fs-5"><?= formatNumDS(($penyakit_tertinggi['nilai_belief'] ?? 0) * 100, 2) ?>%</strong>.
+                        <br><br>
+                        <span class="badge bg-secondary px-3 py-2 rounded-pill fs-6">
+                            <i class="fa-solid fa-circle-xmark me-1"></i> Status Diagnosis: Penyakit Tidak Terdeteksi
+                        </span>
+                        <br><br>
+                        <span class="text-muted small">
+                            <em>Keterangan Sistem:</em> Karena nilai kepercayaan berada di bawah ambang batas minimum keyakinan (60%), sistem <strong>tidak menyimpulkan pasien terdeteksi terkena penyakit tertentu</strong>. Pasien dinyatakan <strong>Penyakit Tidak Terdeteksi</strong> dan disarankan untuk melakukan pemeriksaan fisik langsung ke dokter/Puskesmas.
+                        </span>
+                    </p>
+                    <?php else: ?>
                     <p class="fs-6 text-dark mb-0" style="line-height: 1.8;">
                         Berdasarkan perhitungan Dempster-Shafer yang benar, nilai densitas kepercayaan tertinggi diperoleh oleh penyakit 
                         <strong class="text-primary fs-5"><?= htmlspecialchars($penyakit_tertinggi['nama_penyakit'] ?? '-') ?></strong> 
                         (Kode: <strong><?= htmlspecialchars($penyakit_tertinggi['kode_penyakit'] ?? '-') ?></strong>) 
                         dengan nilai kepercayaan sebesar <strong class="text-primary fs-5"><?= formatNumDS(($penyakit_tertinggi['nilai_belief'] ?? 0) * 100, 2) ?>%</strong>.
                     </p>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

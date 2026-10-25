@@ -114,7 +114,22 @@ if (is_array($gejala_arr)) {
 
         <!-- Hasil Section -->
         <?php $section_hasil = (!empty($data['foto_pasien']) && file_exists('assets/img/pasien/' . $data['foto_pasien'])) ? 'C' : 'B'; ?>
+        <?php $section_solusi = ($section_hasil === 'C') ? 'D' : 'C'; ?>
         <h6 class="fw-bold mb-2"><?= $section_hasil; ?>. Hasil Analisis Dempster-Shafer:</h6>
+        <?php if ($data['nilai_belief'] < 60): ?>
+        <div class="border border-dark p-3 mb-4 text-center">
+            Berdasarkan gejala yang dipilih dan hasil analisis sistem pakar:
+            <h3 class="fw-bold text-uppercase mt-2 text-secondary">Penyakit Tidak Terdeteksi</h3>
+            <p class="mb-0 fw-bold">Tingkat Keyakinan Sistem: <?= $data['nilai_belief']; ?>% (Rendah)</p>
+            <small class="text-muted">Tingkat keyakinan berada di bawah ambang batas (60%), sehingga tidak dapat disimpulkan adanya penyakit kulit tertentu secara spesifik.</small>
+        </div>
+
+        <!-- Solusi Section -->
+        <h6 class="fw-bold mb-2"><?= $section_solusi; ?>. Rekomendasi Penanganan Pertama:</h6>
+        <div class="border border-dark p-3 mb-5" style="text-align: justify;">
+            Karena tingkat keyakinan sistem berada pada kategori <strong>Rendah</strong>, penyakit tidak terdeteksi secara spesifik. Pasien sangat disarankan untuk melakukan pemeriksaan fisik langsung ke dokter spesialis kulit atau fasilitas pelayanan kesehatan terdekat (Puskesmas Siompu). Harap menjaga kebersihan area kulit dan tidak menggunakan obat keras tanpa petunjuk dokter.
+        </div>
+        <?php else: ?>
         <div class="border border-dark p-3 mb-4 text-center">
             Berdasarkan gejala yang dipilih, kemungkinan besar pasien mengalami:
             <h3 class="fw-bold text-uppercase mt-2"><?= htmlspecialchars($data['nama_penyakit'] ?? 'Tidak Diketahui'); ?></h3>
@@ -122,10 +137,11 @@ if (is_array($gejala_arr)) {
         </div>
 
         <!-- Solusi Section -->
-        <h6 class="fw-bold mb-2">C. Rekomendasi Penanganan Pertama:</h6>
+        <h6 class="fw-bold mb-2"><?= $section_solusi; ?>. Rekomendasi Penanganan Pertama:</h6>
         <div class="border border-dark p-3 mb-5" style="text-align: justify;">
             <?= nl2br(htmlspecialchars($data['solusi'] ?? 'Silakan konsultasi lebih lanjut dengan dokter.')); ?>
         </div>
+        <?php endif; ?>
 
         <div class="row">
             <div class="col-8">

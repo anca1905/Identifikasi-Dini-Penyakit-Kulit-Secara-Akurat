@@ -49,13 +49,13 @@ function getGejalaNames($koneksi, $gejala_json) {
 
 // Helper: warna badge presentase
 function getBadgeClass($nilai) {
-    if ($nilai >= 70) return 'success';
-    if ($nilai >= 40) return 'warning';
+    if ($nilai >= 80) return 'success';
+    if ($nilai >= 60) return 'warning';
     return 'danger';
 }
 function getKategori($nilai) {
-    if ($nilai >= 70) return 'Tinggi';
-    if ($nilai >= 40) return 'Sedang';
+    if ($nilai >= 80) return 'Tinggi';
+    if ($nilai >= 60) return 'Sedang';
     return 'Rendah';
 }
 
@@ -128,9 +128,15 @@ function buildQuery($overrides = []) {
                                 </div>
                             </td>
                             <td class="px-3">
-                                <span class="badge bg-primary bg-opacity-10 text-primary px-2 py-1 rounded-pill fw-semibold" style="font-size:0.8rem;">
-                                    <?= htmlspecialchars($row['nama_penyakit'] ?? 'Tidak Diketahui'); ?>
-                                </span>
+                                <?php if ($row['nilai_belief'] < 60): ?>
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 rounded-pill fw-semibold" style="font-size:0.8rem;">
+                                        Tidak Terdeteksi
+                                    </span>
+                                <?php else: ?>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary px-2 py-1 rounded-pill fw-semibold" style="font-size:0.8rem;">
+                                        <?= htmlspecialchars($row['nama_penyakit'] ?? 'Tidak Diketahui'); ?>
+                                    </span>
+                                <?php endif; ?>
                             </td>
                             <td class="px-3 text-center">
                                 <?php $badge = getBadgeClass($row['nilai_belief']); ?>
@@ -184,15 +190,15 @@ function buildQuery($overrides = []) {
     <div class="card border shadow-sm px-4 py-3 rounded-3" style="min-width: 260px; background:#fff;">
         <div class="fw-semibold small text-dark mb-2">Keterangan Presentase Hasil</div>
         <div class="d-flex align-items-center gap-2 small mb-1">
-            <span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-25 px-2 rounded-pill fw-bold">0% – 39%</span>
+            <span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-25 px-2 rounded-pill fw-bold">0% – 59%</span>
             <span class="text-muted">: Kemungkinan rendah</span>
         </div>
         <div class="d-flex align-items-center gap-2 small mb-1">
-            <span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-25 px-2 rounded-pill fw-bold">40% – 69%</span>
+            <span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-25 px-2 rounded-pill fw-bold">60% – 79%</span>
             <span class="text-muted">: Kemungkinan sedang</span>
         </div>
         <div class="d-flex align-items-center gap-2 small">
-            <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 px-2 rounded-pill fw-bold">70% – 100%</span>
+            <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 px-2 rounded-pill fw-bold">80% – 100%</span>
             <span class="text-muted">: Kemungkinan tinggi</span>
         </div>
     </div>

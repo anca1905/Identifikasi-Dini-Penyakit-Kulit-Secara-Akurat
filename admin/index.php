@@ -126,9 +126,15 @@ $q_latest = mysqli_query($koneksi, "SELECT r.*, p.nama_penyakit FROM riwayat_kon
                                         <div class="small text-muted"><?= htmlspecialchars($row['alamat']); ?></div>
                                     </td>
                                     <td>
-                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill px-3 py-2 fw-medium">
-                                            <?= htmlspecialchars($row['nama_penyakit'] ?? 'Tidak Diketahui'); ?>
-                                        </span>
+                                        <?php if ($row['nilai_belief'] < 60): ?>
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle rounded-pill px-3 py-2 fw-medium">
+                                                Tidak Terdeteksi
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill px-3 py-2 fw-medium">
+                                                <?= htmlspecialchars($row['nama_penyakit'] ?? 'Tidak Diketahui'); ?>
+                                            </span>
+                                        <?php endif; ?>
                                     </td>
                                     <td class="text-center">
                                         <span class="fw-bold text-dark"><?= $row['nilai_belief']; ?>%</span>

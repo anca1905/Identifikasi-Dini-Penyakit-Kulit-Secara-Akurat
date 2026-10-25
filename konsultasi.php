@@ -86,7 +86,7 @@ while ($row = mysqli_fetch_assoc($result_gejala)) {
                                             <option value="1">Sangat Yakin</option>
                                             <option value="0.8">Yakin</option>
                                             <option value="0.4">Kurang Yakin</option>
-                                            <option value="0.2">Tidak Tahu</option>
+                                            <option value="0.2">Tidak</option>
                                         </select>
                                     </div>
                                 </div>
