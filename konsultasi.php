@@ -3,6 +3,21 @@
 require_once 'includes/koneksi.php';
 require_once 'includes/header.php';
 
+// Reset sesi biodata jika diminta (misal ingin input pasien baru)
+if (isset($_GET['reset'])) {
+    unset($_SESSION['pasien_konsultasi']);
+    header("Location: konsultasi.php");
+    exit;
+}
+
+$pasien_lama = $_SESSION['pasien_konsultasi'] ?? [];
+$nama_val = $pasien_lama['nama_pasien'] ?? '';
+$umur_val = $pasien_lama['umur'] ?? '';
+$jk_val = $pasien_lama['jenis_kelamin'] ?? '';
+$alamat_val = $pasien_lama['alamat'] ?? '';
+$foto_val = $pasien_lama['foto_pasien'] ?? '';
+$has_foto = (!empty($foto_val) && file_exists('assets/img/pasien/' . $foto_val));
+
 // Ambil daftar gejala dari database
 $query_gejala = "SELECT * FROM gejala ORDER BY kode_gejala ASC";
 $result_gejala = mysqli_query($koneksi, $query_gejala);
@@ -25,45 +40,72 @@ while ($row = mysqli_fetch_assoc($result_gejala)) {
                 <form action="hasil.php" method="POST" enctype="multipart/form-data">
                     
                     <!-- Biodata Pasien -->
-                    <h4 class="mb-4 fs-5 border-bottom pb-2">1. Biodata Pasien</h4>
+                    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
+                        <h4 class="mb-0 fs-5">1. Biodata Pasien</h4>
+                        <?php if (!empty($pasien_lama)): ?>
+                            <a href="konsultasi.php?reset=1" class="btn btn-sm btn-outline-secondary rounded-pill px-3" title="Kosongkan biodata untuk pasien baru">
+                                <i class="fa-solid fa-user-plus me-1"></i> Pasien Baru
+                            </a>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if (!empty($pasien_lama)): ?>
+                        <div class="alert alert-primary bg-primary bg-opacity-10 border-primary border-opacity-25 rounded-3 mb-4 p-3 small d-flex align-items-center">
+                            <i class="fa-solid fa-circle-info fs-5 text-primary me-2"></i>
+                            <div>
+                                <strong>Biodata Tersimpan (Mode Cek Ulang):</strong> Nama, umur, jenis kelamin, alamat, dan foto otomatis terisi dari pemeriksaan sebelumnya.
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
                     <div class="row g-3 mb-5">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Nama Lengkap</label>
-                            <input type="text" name="nama_pasien" class="form-control form-control-lg" placeholder="Masukkan nama..." required>
+                            <input type="text" name="nama_pasien" class="form-control form-control-lg" placeholder="Masukkan nama..." value="<?= htmlspecialchars($nama_val); ?>" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Umur (Tahun)</label>
-                            <input type="number" name="umur" class="form-control form-control-lg" placeholder="Contoh: 25" min="1" max="120" required>
+                            <input type="number" name="umur" class="form-control form-control-lg" placeholder="Contoh: 25" min="1" max="120" value="<?= htmlspecialchars((string)$umur_val); ?>" required>
                         </div>
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">Jenis Kelamin</label>
                             <div class="d-flex gap-4 border p-3 rounded-3 bg-light">
                                 <div class="form-check cursor-pointer">
-                                    <input class="form-check-input mt-1" type="radio" name="jenis_kelamin" id="jl_l" value="Laki-laki" required>
+                                    <input class="form-check-input mt-1" type="radio" name="jenis_kelamin" id="jl_l" value="Laki-laki" <?= ($jk_val === 'Laki-laki') ? 'checked' : ''; ?> required>
                                     <label class="form-check-label ps-1" for="jl_l" style="cursor: pointer;">Laki-laki</label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input mt-1" type="radio" name="jenis_kelamin" id="jl_p" value="Perempuan" required>
+                                    <input class="form-check-input mt-1" type="radio" name="jenis_kelamin" id="jl_p" value="Perempuan" <?= ($jk_val === 'Perempuan') ? 'checked' : ''; ?> required>
                                     <label class="form-check-label ps-1" for="jl_p" style="cursor: pointer;">Perempuan</label>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">Alamat Lengkap</label>
-                            <input type="text" name="alamat" class="form-control form-control-lg" placeholder="Contoh: Jl. Merdeka No. 10, Jakarta" required>
+                            <input type="text" name="alamat" class="form-control form-control-lg" placeholder="Contoh: Jl. Merdeka No. 10, Jakarta" value="<?= htmlspecialchars($alamat_val); ?>" required>
                         </div>
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">Foto Kondisi Kulit <span class="text-muted fw-normal">(Opsional)</span></label>
+                            <input type="hidden" name="foto_lama" id="fotoLamaInput" value="<?= htmlspecialchars($foto_val); ?>">
                             <div class="upload-area border rounded-3 p-4 text-center bg-light position-relative" id="uploadArea" style="cursor: pointer; border-style: dashed !important; border-color: #0d6efd !important;">
                                 <input type="file" name="foto_pasien" id="fotoInput" accept="image/*" class="position-absolute top-0 start-0 w-100 h-100 opacity-0" style="cursor: pointer; z-index: 2;">
-                                <div id="uploadPlaceholder">
+                                <div id="uploadPlaceholder" class="<?= $has_foto ? 'd-none' : ''; ?>">
                                     <i class="fa-solid fa-camera fs-2 text-primary mb-2"></i>
                                     <p class="mb-1 fw-semibold text-dark">Klik atau seret foto ke sini</p>
                                     <p class="text-muted small mb-0">Format: JPG, PNG, WEBP &bull; Maks. 2MB</p>
                                 </div>
-                                <div id="uploadPreview" class="d-none">
-                                    <img id="previewImg" src="" alt="Preview" class="img-fluid rounded-3" style="max-height: 220px; object-fit: cover;">
-                                    <p class="mt-2 mb-0 text-success fw-semibold"><i class="fa-solid fa-circle-check me-1"></i> <span id="previewName"></span></p>
+                                <div id="uploadPreview" class="<?= $has_foto ? '' : 'd-none'; ?>">
+                                    <img id="previewImg" src="<?= $has_foto ? 'assets/img/pasien/' . htmlspecialchars($foto_val) : ''; ?>" alt="Preview" class="img-fluid rounded-3" style="max-height: 220px; object-fit: cover;">
+                                    <p class="mt-2 mb-1 text-success fw-semibold">
+                                        <i class="fa-solid fa-circle-check me-1"></i> 
+                                        <span id="previewName"><?= $has_foto ? 'Foto tersimpan: ' . htmlspecialchars($foto_val) : ''; ?></span>
+                                    </p>
+                                    <div class="mt-2 position-relative" style="z-index: 3;">
+                                        <span class="badge bg-primary bg-opacity-10 text-primary me-2"><i class="fa-solid fa-arrows-rotate me-1"></i> Klik untuk mengganti</span>
+                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-0" id="btnHapusFoto" style="font-size: 0.8rem;">
+                                            <i class="fa-solid fa-trash me-1"></i> Hapus Foto
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -146,6 +188,21 @@ document.addEventListener("DOMContentLoaded", function() {
     const uploadPreview = document.getElementById('uploadPreview');
     const previewImg = document.getElementById('previewImg');
     const previewName = document.getElementById('previewName');
+    const btnHapusFoto = document.getElementById('btnHapusFoto');
+    const fotoLamaInput = document.getElementById('fotoLamaInput');
+
+    if (btnHapusFoto) {
+        btnHapusFoto.addEventListener('click', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            if (fotoInput) fotoInput.value = '';
+            if (fotoLamaInput) fotoLamaInput.value = '';
+            if (previewImg) previewImg.src = '';
+            if (previewName) previewName.textContent = '';
+            if (uploadPreview) uploadPreview.classList.add('d-none');
+            if (uploadPlaceholder) uploadPlaceholder.classList.remove('d-none');
+        });
+    }
 
     if (fotoInput) {
         fotoInput.addEventListener('change', function() {
@@ -165,9 +222,10 @@ document.addEventListener("DOMContentLoaded", function() {
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     previewImg.src = e.target.result;
-                    previewName.textContent = file.name;
+                    previewName.textContent = file.name + ' (Foto baru dipilih)';
                     uploadPlaceholder.classList.add('d-none');
                     uploadPreview.classList.remove('d-none');
+                    if (fotoLamaInput) fotoLamaInput.value = '';
                 };
                 reader.readAsDataURL(file);
             }

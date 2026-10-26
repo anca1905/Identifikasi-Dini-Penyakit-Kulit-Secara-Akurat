@@ -30,10 +30,11 @@ if (count($selected_gejala) > 4) {
 }
 
 // Tangkap Data Biodata
-$nama_pasien = mysqli_real_escape_string($koneksi, $_POST['nama_pasien']);
-$umur = (int) $_POST['umur'];
-$jenis_kelamin = mysqli_real_escape_string($koneksi, $_POST['jenis_kelamin']);
+$nama_pasien = mysqli_real_escape_string($koneksi, $_POST['nama_pasien'] ?? '');
+$umur = (int) ($_POST['umur'] ?? 0);
+$jenis_kelamin = mysqli_real_escape_string($koneksi, $_POST['jenis_kelamin'] ?? '');
 $alamat = mysqli_real_escape_string($koneksi, $_POST['alamat'] ?? '');
+$foto_lama = mysqli_real_escape_string($koneksi, $_POST['foto_lama'] ?? '');
 $gejala_json = json_encode($selected_gejala);
 
 // Proses Upload Foto Pasien
@@ -53,6 +54,20 @@ if (isset($_FILES['foto_pasien']) && $_FILES['foto_pasien']['error'] === UPLOAD_
         }
     }
 }
+
+// Jika tidak ada upload foto baru, gunakan foto lama yang tersimpan jika ada
+if (empty($foto_pasien) && !empty($foto_lama) && file_exists('assets/img/pasien/' . $foto_lama)) {
+    $foto_pasien = $foto_lama;
+}
+
+// Simpan data pasien ke SESSION untuk fitur Cek Ulang
+$_SESSION['pasien_konsultasi'] = [
+    'nama_pasien'   => $_POST['nama_pasien'] ?? '',
+    'umur'          => $umur,
+    'jenis_kelamin' => $_POST['jenis_kelamin'] ?? '',
+    'alamat'        => $_POST['alamat'] ?? '',
+    'foto_pasien'   => $foto_pasien
+];
 
 // Format array string (untuk referensi query SQL)
 $gejala_in = "'" . implode("','", array_map(function ($val) use ($koneksi) {
@@ -232,12 +247,14 @@ foreach ($combined_mass as $set_key => $mass_value) {
     $nama_list = [];
     $solusi    = '';
     $gambar_db = '';
+    $gambar_solusi_db = '';
     foreach ($kode_list as $kp) {
         if (isset($nama_penyakit_map[$kp])) {
             $nama_list[] = $nama_penyakit_map[$kp]['nama_penyakit'];
             if (count($kode_list) === 1) {
                 $solusi = $nama_penyakit_map[$kp]['solusi'];
                 $gambar_db = $nama_penyakit_map[$kp]['gambar'] ?? '';
+                $gambar_solusi_db = $nama_penyakit_map[$kp]['gambar_solusi'] ?? '';
             }
         }
     }
@@ -249,6 +266,7 @@ foreach ($combined_mass as $set_key => $mass_value) {
         'nama_penyakit' => implode(' / ', $nama_list),     // Label tampilan
         'solusi'        => $solusi,
         'gambar'        => $gambar_db,
+        'gambar_solusi' => $gambar_solusi_db,
         'nilai_belief'  => $mass_value,
         'persentase'    => $persentase,
         'is_single'     => count($kode_list) === 1,
@@ -297,7 +315,7 @@ if ($penyakit_tertinggi) {
             <a href="konsultasi.php" class="btn btn-primary rounded-pill px-4 shadow-sm fw-semibold">
                 <i class="fa-solid fa-rotate-right me-2"></i> Cek Ulang
             </a>
-            <a href="index.php" class="btn btn-outline-danger rounded-pill px-4 shadow-sm fw-semibold">
+            <a href="index.php?reset_pasien=1" class="btn btn-outline-danger rounded-pill px-4 shadow-sm fw-semibold">
                 <i class="fa-solid fa-power-off me-2"></i> Logout
             </a>
         </div>
@@ -522,15 +540,59 @@ if ($penyakit_tertinggi) {
                 <div class="card-body p-4 p-md-5">
                     <h5 class="fw-bold mb-4 d-flex align-items-center">
                         <span class="bg-success bg-opacity-10 text-success p-2 rounded-circle me-3"><i class="fa-solid fa-stethoscope"></i></span>
-                        Solusi / Rekomendasi
+                        Solusi / Pengobatan
                     </h5>
                     <?php if ($is_terdeteksi): ?>
-                        <p class="fs-6 text-secondary" style="line-height: 1.8;">
-                            <?= nl2br(htmlspecialchars($penyakit_tertinggi['solusi'])) ?>
-                        </p>
+                        <?php 
+                            $kode_p = $penyakit_tertinggi['kode_penyakit'];
+                            $gambar_solusi_db = $penyakit_tertinggi['gambar_solusi'] ?? '';
+                            $gambar_solusi = '';
+                            $solusi_dir = 'assets/img/solusi/';
+
+                            // 1. Cek dari database
+                            if (!empty($gambar_solusi_db) && file_exists($solusi_dir . $gambar_solusi_db)) {
+                                $gambar_solusi = $solusi_dir . $gambar_solusi_db;
+                            } else {
+                                // 2. Cek file lokal berdasarkan kode penyakit (contoh: P01.jpg)
+                                $ext_list = ['jpg', 'jpeg', 'png', 'webp'];
+                                foreach ($ext_list as $e) {
+                                    if (file_exists($solusi_dir . $kode_p . '.' . $e)) {
+                                        $gambar_solusi = $solusi_dir . $kode_p . '.' . $e;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // 3. Fallback: Gambar ilustrasi obat / penanganan sesuai jenis penyakit
+                            if (empty($gambar_solusi)) {
+                                $default_solusi_map = [
+                                    'P01' => 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=600&auto=format&fit=crop', // Salep / Krim Kulit
+                                    'P02' => 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?q=80&w=600&auto=format&fit=crop', // Salep Antijamur
+                                    'P03' => 'https://images.unsplash.com/photo-1556228720-195a672e8a03?q=80&w=600&auto=format&fit=crop', // Losion / Antijamur
+                                    'P04' => 'https://images.unsplash.com/photo-1631815589968-fdb09a223b1e?q=80&w=600&auto=format&fit=crop', // Terapi Medis Puskesmas
+                                    'P05' => 'https://images.unsplash.com/photo-1471864190281-a93a3070b6de?q=80&w=600&auto=format&fit=crop', // Losion Kalamin & Pereda Demam
+                                    'P06' => 'https://images.unsplash.com/photo-1576602976047-174e57a47881?q=80&w=600&auto=format&fit=crop', // Vitamin & Perawatan
+                                ];
+                                $gambar_solusi = $default_solusi_map[$kode_p] ?? 'https://placehold.co/600x400/d1e7dd/0f5132?text=Solusi+Pengobatan+' . urlencode($penyakit_tertinggi['nama_penyakit']);
+                            }
+                        ?>
+                        <div class="text-center mb-4">
+                            <img src="<?= $gambar_solusi ?>" alt="Solusi <?= htmlspecialchars($penyakit_tertinggi['nama_penyakit']) ?>" class="img-fluid rounded-4 shadow-sm" style="max-height: 250px; width: 100%; object-fit: cover;">
+                        </div>
+                        <div class="p-3 bg-light rounded-3 mb-2 border-start border-success border-4">
+                            <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-prescription-bottle-medical me-2 text-success"></i>Saran Pengobatan / Penanganan:</h6>
+                            <p class="fs-6 text-secondary mb-0" style="line-height: 1.8;">
+                                <?= nl2br(htmlspecialchars($penyakit_tertinggi['solusi'])) ?>
+                            </p>
+                        </div>
                     <?php else: ?>
+                        <div class="text-center py-4 px-3 mb-4 bg-light rounded-4 border border-dashed">
+                            <div class="display-5 text-success opacity-50 mb-2"><i class="fa-solid fa-hospital-user"></i></div>
+                            <h5 class="fw-bold text-dark mb-1">Rekomendasi Penanganan Medis</h5>
+                            <p class="text-muted small mb-0">Pemeriksaan fisik langsung oleh dokter medis</p>
+                        </div>
                         <div class="p-3 bg-light rounded-3 mb-3 border-start border-success border-4">
-                            <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-notes-medical me-2 text-success"></i>Rekomendasi Penanganan:</h6>
+                            <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-notes-medical me-2 text-success"></i>Langkah Penanganan:</h6>
                             <ul class="text-secondary small mb-0 ps-3" style="line-height: 1.8;">
                                 <li>Karena penyakit tidak terdeteksi secara pasti, sangat dianjurkan untuk berkonsultasi langsung dengan dokter spesialis kulit atau tenaga medis di Puskesmas Siompu untuk pemeriksaan fisik klinis.</li>
                                 <li>Jaga kebersihan area kulit yang bermasalah, mandi dengan air bersih dan sabun lembut, serta gunakan pakaian yang bersih dan menyerap keringat.</li>

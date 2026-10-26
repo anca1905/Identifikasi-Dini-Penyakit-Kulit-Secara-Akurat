@@ -2,6 +2,10 @@
 // index.php
 require_once 'includes/koneksi.php';
 require_once 'includes/header.php'; 
+
+if (isset($_GET['reset_pasien'])) {
+    unset($_SESSION['pasien_konsultasi']);
+}
 ?>
 
 <div class="container">

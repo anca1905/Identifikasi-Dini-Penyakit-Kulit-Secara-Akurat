@@ -7,10 +7,13 @@ if (isset($_GET['del'])) {
     $kode = mysqli_real_escape_string($koneksi, $_GET['del']);
     
     // Hapus gambar jika ada
-    $cek_gambar_lama = mysqli_query($koneksi, "SELECT gambar FROM penyakit WHERE kode_penyakit='$kode'");
+    $cek_gambar_lama = mysqli_query($koneksi, "SELECT gambar, gambar_solusi FROM penyakit WHERE kode_penyakit='$kode'");
     $row_lama = mysqli_fetch_assoc($cek_gambar_lama);
     if ($row_lama['gambar'] && file_exists('../assets/img/penyakit/' . $row_lama['gambar'])) {
         unlink('../assets/img/penyakit/' . $row_lama['gambar']);
+    }
+    if (!empty($row_lama['gambar_solusi']) && file_exists('../assets/img/solusi/' . $row_lama['gambar_solusi'])) {
+        unlink('../assets/img/solusi/' . $row_lama['gambar_solusi']);
     }
     
     mysqli_query($koneksi, "DELETE FROM penyakit WHERE kode_penyakit='$kode'");
@@ -24,7 +27,7 @@ if (isset($_POST['add'])) {
     $nama = mysqli_real_escape_string($koneksi, $_POST['nama_penyakit']);
     $solusi = mysqli_real_escape_string($koneksi, $_POST['solusi']);
     
-    // Handle File Upload
+    // Handle File Upload Gambar Penyakit
     $gambar = '';
     if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] == 0) {
         $ext = pathinfo($_FILES['gambar']['name'], PATHINFO_EXTENSION);
@@ -35,12 +38,24 @@ if (isset($_POST['add'])) {
         }
         move_uploaded_file($_FILES['gambar']['tmp_name'], $upload_dir . $gambar);
     }
+
+    // Handle File Upload Gambar Solusi
+    $gambar_solusi = '';
+    if (isset($_FILES['gambar_solusi']) && $_FILES['gambar_solusi']['error'] == 0) {
+        $ext = pathinfo($_FILES['gambar_solusi']['name'], PATHINFO_EXTENSION);
+        $gambar_solusi = 'solusi_' . $kode . '_' . time() . '.' . $ext;
+        $upload_dir_solusi = '../assets/img/solusi/';
+        if (!is_dir($upload_dir_solusi)) {
+            mkdir($upload_dir_solusi, 0777, true);
+        }
+        move_uploaded_file($_FILES['gambar_solusi']['tmp_name'], $upload_dir_solusi . $gambar_solusi);
+    }
     
     $cek = mysqli_query($koneksi, "SELECT * FROM penyakit WHERE kode_penyakit='$kode'");
     if (mysqli_num_rows($cek) > 0) {
         echo "<script>Swal.fire({title: 'Gagal!', text: 'Error: Kode Penyakit tersebut sudah digunakan!', icon: 'error', confirmButtonText: 'OK'});</script>";
     } else {
-        mysqli_query($koneksi, "INSERT INTO penyakit (kode_penyakit, nama_penyakit, solusi, gambar) VALUES ('$kode', '$nama', '$solusi', '$gambar')");
+        mysqli_query($koneksi, "INSERT INTO penyakit (kode_penyakit, nama_penyakit, solusi, gambar, gambar_solusi) VALUES ('$kode', '$nama', '$solusi', '$gambar', '$gambar_solusi')");
         echo "<script>Swal.fire({title: 'Berhasil!', text: 'Data penyakit berhasil ditambahkan!', icon: 'success', confirmButtonText: 'OK'}).then(()=> { window.location='penyakit.php'; });</script>";
         exit;
     }
@@ -52,7 +67,7 @@ if (isset($_POST['edit'])) {
     $nama = mysqli_real_escape_string($koneksi, $_POST['nama_penyakit']);
     $solusi = mysqli_real_escape_string($koneksi, $_POST['solusi']);
     
-    // Handle File Upload
+    // Handle File Upload Gambar Penyakit
     $gambar_update = "";
     if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] == 0) {
         $ext = pathinfo($_FILES['gambar']['name'], PATHINFO_EXTENSION);
@@ -72,8 +87,29 @@ if (isset($_POST['edit'])) {
         
         $gambar_update = ", gambar='$gambar'";
     }
+
+    // Handle File Upload Gambar Solusi
+    $gambar_solusi_update = "";
+    if (isset($_FILES['gambar_solusi']) && $_FILES['gambar_solusi']['error'] == 0) {
+        $ext = pathinfo($_FILES['gambar_solusi']['name'], PATHINFO_EXTENSION);
+        $gambar_solusi = 'solusi_' . $kode . '_' . time() . '.' . $ext;
+        $upload_dir_solusi = '../assets/img/solusi/';
+        if (!is_dir($upload_dir_solusi)) {
+            mkdir($upload_dir_solusi, 0777, true);
+        }
+        move_uploaded_file($_FILES['gambar_solusi']['tmp_name'], $upload_dir_solusi . $gambar_solusi);
+        
+        // Hapus gambar solusi lama jika ada
+        $cek_solusi_lama = mysqli_query($koneksi, "SELECT gambar_solusi FROM penyakit WHERE kode_penyakit='$kode'");
+        $row_s_lama = mysqli_fetch_assoc($cek_solusi_lama);
+        if (!empty($row_s_lama['gambar_solusi']) && file_exists('../assets/img/solusi/' . $row_s_lama['gambar_solusi'])) {
+            unlink('../assets/img/solusi/' . $row_s_lama['gambar_solusi']);
+        }
+        
+        $gambar_solusi_update = ", gambar_solusi='$gambar_solusi'";
+    }
     
-    mysqli_query($koneksi, "UPDATE penyakit SET nama_penyakit='$nama', solusi='$solusi' $gambar_update WHERE kode_penyakit='$kode'");
+    mysqli_query($koneksi, "UPDATE penyakit SET nama_penyakit='$nama', solusi='$solusi' $gambar_update $gambar_solusi_update WHERE kode_penyakit='$kode'");
     echo "<script>Swal.fire({title: 'Berhasil!', text: 'Data penyakit berhasil diperbarui!', icon: 'success', confirmButtonText: 'OK'}).then(()=> { window.location='penyakit.php'; });</script>";
     exit;
 }
@@ -152,6 +188,16 @@ $query = mysqli_query($koneksi, "SELECT * FROM penyakit ORDER BY kode_penyakit A
                                                 <?php endif; ?>
                                                 <small class="text-muted">Biarkan kosong jika tidak ingin mengubah gambar.</small>
                                             </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-semibold">Gambar Solusi / Pengobatan</label>
+                                                <input type="file" name="gambar_solusi" class="form-control form-control-lg" accept="image/*">
+                                                <?php if(!empty($row['gambar_solusi'])): ?>
+                                                    <div class="mt-2">
+                                                        <img src="../assets/img/solusi/<?= $row['gambar_solusi'] ?>" alt="Gambar Solusi Saat Ini" class="img-thumbnail" style="max-height: 100px;">
+                                                    </div>
+                                                <?php endif; ?>
+                                                <small class="text-muted">Biarkan kosong jika tidak ingin mengubah gambar solusi.</small>
+                                            </div>
                                         </div>
                                         <div class="modal-footer border-top-0 pb-4 px-4">
                                             <button type="button" class="btn btn-light rounded-pill px-4 fw-medium" data-bs-dismiss="modal">Batal</button>
@@ -197,6 +243,10 @@ $query = mysqli_query($koneksi, "SELECT * FROM penyakit ORDER BY kode_penyakit A
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Gambar Penyakit</label>
                         <input type="file" name="gambar" class="form-control form-control-lg" accept="image/*">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Gambar Solusi / Pengobatan</label>
+                        <input type="file" name="gambar_solusi" class="form-control form-control-lg" accept="image/*">
                     </div>
                 </div>
                 <div class="modal-footer border-top-0 pb-4 px-4">
